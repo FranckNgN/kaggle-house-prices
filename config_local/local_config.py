@@ -5,8 +5,12 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Paths to data and files
 DATA_DIR = os.path.join(BASE_DIR, 'data')
+
 TRAIN_CSV = os.path.join(DATA_DIR, 'train.csv')
 TEST_CSV = os.path.join(DATA_DIR, 'test.csv')
+
+TRAIN_FILLED_CSV = os.path.join(DATA_DIR, 'train_filled.csv')
+TEST_FILLED_CSV = os.path.join(DATA_DIR, 'test_filled.csv')
 
 # (Optional) You can also add these for reuse elsewhere:
 NOTEBOOKS_DIR = os.path.join(BASE_DIR, 'notebooks')
