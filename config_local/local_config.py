@@ -10,6 +10,8 @@ TRAIN_CSV = os.path.join(DATA_DIR, 'train.csv')
 TEST_CSV = os.path.join(DATA_DIR, 'test.csv')
 
 TRAIN_FILLED_CSV = os.path.join(DATA_DIR, 'train_filled.csv')
+TRAIN_OUTLIER_FILLED_CSV = os.path.join(DATA_DIR, 'train_outlier_filled.csv')
+TRAIN_OUTLIER_FILLED_LOG1 = os.path.join(DATA_DIR, 'train_outlier_filled_log1.csv')
 TEST_FILLED_CSV = os.path.join(DATA_DIR, 'test_filled.csv')
 
 # (Optional) You can also add these for reuse elsewhere:
