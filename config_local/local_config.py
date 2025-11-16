@@ -13,17 +13,21 @@ TEST_CSV = RAW_DIR / "test.csv"
 DATA_DESCRIPTION = RAW_DIR / "data_description.txt"
 
 # Interim
-TRAIN_FILLED_CSV = INTERIM_DIR / "train_filled.csv"
+TRAIN_FILLED_CSV = INTERIM_DIR / "train_process1.csv"
+TEST_FILLED_CSV = INTERIM_DIR / "test_process1.csv"
 
-TRAIN_OUTLIER_FILLED_CSV = INTERIM_DIR / "train_outlier_filled.csv"
-TRAIN_OUTLIER_FILLED_LOG1_CSV = INTERIM_DIR / "train_outlier_filled_log1.csv"
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_CSV = INTERIM_DIR / "train_outlier_filled_log1_Engineered.csv"
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_CATENCODED_CSV = INTERIM_DIR / "train_outlier_filled_log1_Engineered_catEncoded.csv"
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_CATENCODED_SCALED_CSV = INTERIM_DIR / "train_outlier_filled_log1_Engineered_catEncoded_scaled.csv"
+TRAIN_OUTLIER_FILLED_CSV = INTERIM_DIR / "train_process2.csv"
 
-TEST_FILLED_CSV = INTERIM_DIR / "test_filled.csv"
-TEST_FILLED_ENGINEERED_CSV = INTERIM_DIR / "test_filled_Engineered.csv"
-TEST_FILLED_ENGINEERED_CATENCODED_CSV = INTERIM_DIR / "test_filled_Engineered_catEncoded.csv"
+TRAIN_OUTLIER_FILLED_LOG1_CSV = INTERIM_DIR / "train_process3.csv"
+
+TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_CSV = INTERIM_DIR / "train_process4.csv"
+TEST_FILLED_ENGINEERED_CSV = INTERIM_DIR / "test_process4.csv"
+
+TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_SCALED_CSV = INTERIM_DIR / "train_process5.csv"
+
+
+TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_SCALED_CATENCODED_CSV = INTERIM_DIR / "train_process6.csv"
+TEST_FILLED_ENGINEERED_CATENCODED_CSV = INTERIM_DIR / "test_process6.csv"
 
 # Processed
 FEATURE_SUMMARY_CSV = PROCESSED_DIR / "feature_summary.csv"
