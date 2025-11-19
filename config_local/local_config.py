@@ -13,21 +13,23 @@ TEST_CSV = RAW_DIR / "test.csv"
 DATA_DESCRIPTION = RAW_DIR / "data_description.txt"
 
 # Interim
-TRAIN_FILLED_CSV = INTERIM_DIR / "train_process1.csv"
-TEST_FILLED_CSV = INTERIM_DIR / "test_process1.csv"
+TRAIN_PROCESS1_CSV = INTERIM_DIR / "train_process1.csv"
+TEST_PROCESS1_CSV = INTERIM_DIR / "test_process1.csv"
 
-TRAIN_OUTLIER_FILLED_CSV = INTERIM_DIR / "train_process2.csv"
+TRAIN_PROCESS2_CSV = INTERIM_DIR / "train_process2.csv"
+TEST_PROCESS2_CSV = INTERIM_DIR / "test_process2.csv"
 
-TRAIN_OUTLIER_FILLED_LOG1_CSV = INTERIM_DIR / "train_process3.csv"
+TRAIN_PROCESS3_CSV = INTERIM_DIR / "train_process3.csv"
+TEST_PROCESS3_CSV = INTERIM_DIR / "test_process3.csv"
 
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_CSV = INTERIM_DIR / "train_process4.csv"
-TEST_FILLED_ENGINEERED_CSV = INTERIM_DIR / "test_process4.csv"
+TRAIN_PROCESS4_CSV = INTERIM_DIR / "train_process4.csv"
+TEST_PROCESS4_CSV = INTERIM_DIR / "test_process4.csv"
 
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_SCALED_CSV = INTERIM_DIR / "train_process5.csv"
+TRAIN_PROCESS5_CSV = INTERIM_DIR / "train_process5.csv"
+TEST_PROCESS5_CSV = INTERIM_DIR / "test_process5.csv"
 
-
-TRAIN_OUTLIER_FILLED_LOG1_ENGINEERED_SCALED_CATENCODED_CSV = INTERIM_DIR / "train_process6.csv"
-TEST_FILLED_ENGINEERED_CATENCODED_CSV = INTERIM_DIR / "test_process6.csv"
+TRAIN_PROCESS6_CSV = INTERIM_DIR / "train_process6.csv"
+TEST_PROCESS6_CSV = INTERIM_DIR / "test_process6.csv"
 
 # Processed
 FEATURE_SUMMARY_CSV = PROCESSED_DIR / "feature_summary.csv"
