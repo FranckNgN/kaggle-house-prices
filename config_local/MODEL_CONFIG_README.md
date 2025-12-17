@@ -195,3 +195,4 @@ RIDGE = {
 - Use `get_model_config()` helper function for programmatic access
 - Run `python config_local/model_config.py` to view all configs
 
+

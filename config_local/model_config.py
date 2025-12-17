@@ -230,3 +230,4 @@ if __name__ == "__main__":
     # Print all configurations when run directly
     print_all_configs()
 
+
