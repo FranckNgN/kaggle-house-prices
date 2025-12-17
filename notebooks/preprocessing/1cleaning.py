@@ -1,30 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Cleaning columns
-
-# In[1]:
-
-
-import os, sys
+import os
+import sys
 import pandas as pd
-
+from pathlib import Path
 from config_local import local_config
-
-
-# In[2]:
-
-
-train = pd.read_csv(local_config.TRAIN_CSV, index_col="Id")#, index_col="Id"
-test  = pd.read_csv(local_config.TEST_CSV, index_col="Id")#, index_col="Id"
-
-print(f"Train shape: {train.shape}  |  Test shape: {test.shape}")
-print(train.head(3))
-
-
-# # Missing values
-
-# In[3]:
 
 
 def fill_missing_with_none_or_zero(df):
@@ -33,24 +14,9 @@ def fill_missing_with_none_or_zero(df):
         if pd.api.types.is_numeric_dtype(df[col]):
             df[col] = df[col].fillna(0)
         else:
-            df[col] = df[col].replace(["NA", ""], pd.NA)   # normalize weird missing codes
+            df[col] = df[col].replace(["NA", ""], pd.NA)
             df[col] = df[col].fillna("<None>")
     return df
-
-
-missing = train.isnull().sum()
-missing = missing[missing > 0].sort_values(ascending=False)
-missing
-
-
-# In[4]:
-
-
-train_filled = fill_missing_with_none_or_zero(train)
-test_filled = fill_missing_with_none_or_zero(test)
-
-
-# In[5]:
 
 
 def summarize_columns(df, max_unique=15):
@@ -84,26 +50,24 @@ def summarize_columns(df, max_unique=15):
                 }
     return pd.DataFrame(summary).T
 
-# Usage
-feature_summary = summarize_columns(train_filled)
-print(feature_summary.head(20))
 
-from pathlib import Path
+if __name__ == "__main__":
+    train = pd.read_csv(local_config.TRAIN_CSV, index_col="Id")
+    test = pd.read_csv(local_config.TEST_CSV, index_col="Id")
 
-# Ensure directory exists
-Path(local_config.FEATURE_SUMMARY_CSV).parent.mkdir(parents=True, exist_ok=True)
-feature_summary.to_csv(local_config.FEATURE_SUMMARY_CSV, index=True)
+    print(f"Train shape: {train.shape}  |  Test shape: {test.shape}")
 
+    train_filled = fill_missing_with_none_or_zero(train)
+    test_filled = fill_missing_with_none_or_zero(test)
 
-# In[6]:
+    feature_summary = summarize_columns(train_filled)
+    print(feature_summary.head(20))
 
+    Path(local_config.FEATURE_SUMMARY_CSV).parent.mkdir(parents=True, exist_ok=True)
+    feature_summary.to_csv(local_config.FEATURE_SUMMARY_CSV, index=True)
 
-from pathlib import Path
+    Path(local_config.TRAIN_PROCESS1_CSV).parent.mkdir(parents=True, exist_ok=True)
+    Path(local_config.TEST_PROCESS1_CSV).parent.mkdir(parents=True, exist_ok=True)
 
-# Ensure directories exist
-Path(local_config.TRAIN_PROCESS1_CSV).parent.mkdir(parents=True, exist_ok=True)
-Path(local_config.TEST_PROCESS1_CSV).parent.mkdir(parents=True, exist_ok=True)
-
-train_filled.to_csv(local_config.TRAIN_PROCESS1_CSV, index=False)
-test_filled.to_csv(local_config.TEST_PROCESS1_CSV, index=False)
-
+    train_filled.to_csv(local_config.TRAIN_PROCESS1_CSV, index=False)
+    test_filled.to_csv(local_config.TEST_PROCESS1_CSV, index=False)
