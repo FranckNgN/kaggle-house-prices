@@ -4,6 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
+from itertools import product
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 from catboost import CatBoostRegressor
@@ -35,41 +36,44 @@ if __name__ == "__main__":
     base_params = cfg["base_params"].copy()
     search_space = cfg["search_space"]
     
-    # Simple grid search over search_space
-    for param_name, param_values in search_space.items():
-        for param_value in param_values:
-            params = base_params.copy()
+    # Generate all combinations using itertools.product
+    param_names = list(search_space.keys())
+    param_value_lists = list(search_space.values())
+    
+    for param_combination in product(*param_value_lists):
+        params = base_params.copy()
+        for param_name, param_value in zip(param_names, param_combination):
             params[param_name] = param_value
 
-            fold_rmses = []
-            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if k in ["learning_rate", "depth", "l2_leaf_reg", "iterations"]])
-            print(f"Testing params: {param_str}")
+        fold_rmses = []
+        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if k in ["learning_rate", "depth", "l2_leaf_reg", "iterations"]])
+        print(f"Testing params: {param_str}")
 
-            for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):
-                print(f"    Starting fold {fold}...")
-                X_tr = X.iloc[train_idx]
-                X_val = X.iloc[val_idx]
-                y_tr = y.iloc[train_idx]
-                y_val = y.iloc[val_idx]
+        for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):
+            print(f"    Starting fold {fold}...")
+            X_tr = X.iloc[train_idx]
+            X_val = X.iloc[val_idx]
+            y_tr = y.iloc[train_idx]
+            y_val = y.iloc[val_idx]
 
-                model = CatBoostRegressor(**params)
-                model.fit(
-                    X_tr, y_tr,
-                    eval_set=(X_val, y_val),
-                    **cfg["fit_params"]
-                )
+            model = CatBoostRegressor(**params)
+            model.fit(
+                X_tr, y_tr,
+                eval_set=(X_val, y_val),
+                **cfg["fit_params"]
+            )
 
-                y_pred_log = model.predict(X_val)
-                rmse = mean_squared_error(y_val, y_pred_log) ** 0.5
-                fold_rmses.append(rmse)
-                print(f"  Fold {fold} log-RMSE: {rmse:.5f}")
+            y_pred_log = model.predict(X_val)
+            rmse = mean_squared_error(y_val, y_pred_log) ** 0.5
+            fold_rmses.append(rmse)
+            print(f"  Fold {fold} log-RMSE: {rmse:.5f}")
 
-            mean_rmse = np.mean(fold_rmses)
-            print(f"--> Mean CV log-RMSE for these params: {mean_rmse:.5f}\n")
+        mean_rmse = np.mean(fold_rmses)
+        print(f"--> Mean CV log-RMSE for these params: {mean_rmse:.5f}\n")
 
-            if mean_rmse < best_cv_rmse:
-                best_cv_rmse = mean_rmse
-                best_params = params.copy()
+        if mean_rmse < best_cv_rmse:
+            best_cv_rmse = mean_rmse
+            best_params = params.copy()
 
     print("\n=====================================")
     print("Best CatBoost params found:")
