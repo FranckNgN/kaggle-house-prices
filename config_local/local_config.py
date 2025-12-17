@@ -4,6 +4,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
+INTERIM_TRAIN_DIR = INTERIM_DIR / "train"
+INTERIM_TEST_DIR = INTERIM_DIR / "test"
 PROCESSED_DIR = DATA_DIR / "processed"
 SUBMISSIONS_DIR = DATA_DIR / "submissions"
 
@@ -12,24 +14,21 @@ TRAIN_CSV = RAW_DIR / "train.csv"
 TEST_CSV = RAW_DIR / "test.csv"
 DATA_DESCRIPTION = RAW_DIR / "data_description.txt"
 
-# Interim
-TRAIN_PROCESS1_CSV = INTERIM_DIR / "train_process1.csv"
-TEST_PROCESS1_CSV = INTERIM_DIR / "test_process1.csv"
+# Interim - Train files
+TRAIN_PROCESS1_CSV = INTERIM_TRAIN_DIR / "train_process1.csv"
+TRAIN_PROCESS2_CSV = INTERIM_TRAIN_DIR / "train_process2.csv"
+TRAIN_PROCESS3_CSV = INTERIM_TRAIN_DIR / "train_process3.csv"
+TRAIN_PROCESS4_CSV = INTERIM_TRAIN_DIR / "train_process4.csv"
+TRAIN_PROCESS5_CSV = INTERIM_TRAIN_DIR / "train_process5.csv"
+TRAIN_PROCESS6_CSV = INTERIM_TRAIN_DIR / "train_process6.csv"
 
-TRAIN_PROCESS2_CSV = INTERIM_DIR / "train_process2.csv"
-TEST_PROCESS2_CSV = INTERIM_DIR / "test_process2.csv"
-
-TRAIN_PROCESS3_CSV = INTERIM_DIR / "train_process3.csv"
-TEST_PROCESS3_CSV = INTERIM_DIR / "test_process3.csv"
-
-TRAIN_PROCESS4_CSV = INTERIM_DIR / "train_process4.csv"
-TEST_PROCESS4_CSV = INTERIM_DIR / "test_process4.csv"
-
-TRAIN_PROCESS5_CSV = INTERIM_DIR / "train_process5.csv"
-TEST_PROCESS5_CSV = INTERIM_DIR / "test_process5.csv"
-
-TRAIN_PROCESS6_CSV = INTERIM_DIR / "train_process6.csv"
-TEST_PROCESS6_CSV = INTERIM_DIR / "test_process6.csv"
+# Interim - Test files
+TEST_PROCESS1_CSV = INTERIM_TEST_DIR / "test_process1.csv"
+TEST_PROCESS2_CSV = INTERIM_TEST_DIR / "test_process2.csv"
+TEST_PROCESS3_CSV = INTERIM_TEST_DIR / "test_process3.csv"
+TEST_PROCESS4_CSV = INTERIM_TEST_DIR / "test_process4.csv"
+TEST_PROCESS5_CSV = INTERIM_TEST_DIR / "test_process5.csv"
+TEST_PROCESS6_CSV = INTERIM_TEST_DIR / "test_process6.csv"
 
 # Processed
 FEATURE_SUMMARY_CSV = PROCESSED_DIR / "feature_summary.csv"
@@ -41,15 +40,22 @@ SAMPLE_SUBMISSION_CSV = SUBMISSIONS_DIR / "sample_submission.csv"
 
 def validate_paths() -> bool:
     """Validate that all required directories exist."""
-    required_dirs = [RAW_DIR, INTERIM_DIR, PROCESSED_DIR, SUBMISSIONS_DIR]
+    required_dirs = [
+        RAW_DIR, 
+        INTERIM_DIR, 
+        INTERIM_TRAIN_DIR, 
+        INTERIM_TEST_DIR, 
+        PROCESSED_DIR, 
+        SUBMISSIONS_DIR
+    ]
     missing = [d for d in required_dirs if not d.exists()]
     
     if missing:
-        print("⚠️  Missing directories:")
+        print("WARNING: Missing directories:")
         for d in missing:
             print(f"  - {d}")
             d.mkdir(parents=True, exist_ok=True)
-        print("✅ Created missing directories")
+        print("[OK] Created missing directories")
     
     return True
 

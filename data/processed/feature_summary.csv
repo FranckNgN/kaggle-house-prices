@@ -1,11 +1,10 @@
 ,type,unique_values
-Id,numeric (continuous),1460 unique values
-MSSubClass,numeric (discrete),"[np.int64(20), np.int64(30), np.int64(40), np.int64(45), np.int64(50), np.int64(60), np.int64(70), np.int64(75), np.int64(80), np.int64(85), np.int64(90), np.int64(120), np.int64(160), np.int64(180), np.int64(190)]"
+MSSubClass,numeric (discrete),"[20, 30, 40, 45, 50, 60, 70, 75, 80, 85, 90, 120, 160, 180, 190]"
 MSZoning,categorical,"['RL', 'RM', 'C (all)', 'FV', 'RH']"
-LotFrontage,numeric (continuous),110 unique values
+LotFrontage,numeric (continuous),111 unique values
 LotArea,numeric (continuous),1073 unique values
 Street,categorical,"['Pave', 'Grvl']"
-Alley,categorical,"['Grvl', 'Pave']"
+Alley,categorical,"['<None>', 'Grvl', 'Pave']"
 LotShape,categorical,"['Reg', 'IR1', 'IR2', 'IR3']"
 LandContour,categorical,"['Lvl', 'Bnk', 'Low', 'HLS']"
 Utilities,categorical,"['AllPub', 'NoSeWa']"
@@ -16,67 +15,67 @@ Condition1,categorical,"['Norm', 'Feedr', 'PosN', 'Artery', 'RRAe', 'RRNn', 'RRA
 Condition2,categorical,"['Norm', 'Artery', 'RRNn', 'Feedr', 'PosN', 'PosA', 'RRAn', 'RRAe']"
 BldgType,categorical,"['1Fam', '2fmCon', 'Duplex', 'TwnhsE', 'Twnhs']"
 HouseStyle,categorical,"['2Story', '1Story', '1.5Fin', '1.5Unf', 'SFoyer', 'SLvl', '2.5Unf', '2.5Fin']"
-OverallQual,numeric (discrete),"[np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10)]"
-OverallCond,numeric (discrete),"[np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9)]"
+OverallQual,numeric (discrete),"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+OverallCond,numeric (discrete),"[1, 2, 3, 4, 5, 6, 7, 8, 9]"
 YearBuilt,numeric (continuous),112 unique values
 YearRemodAdd,numeric (continuous),61 unique values
 RoofStyle,categorical,"['Gable', 'Hip', 'Gambrel', 'Mansard', 'Flat', 'Shed']"
 RoofMatl,categorical,"['CompShg', 'WdShngl', 'Metal', 'WdShake', 'Membran', 'Tar&Grv', 'Roll', 'ClyTile']"
 Exterior1st,categorical,"['VinylSd', 'MetalSd', 'Wd Sdng', 'HdBoard', 'BrkFace', 'WdShing', 'CemntBd', 'Plywood', 'AsbShng', 'Stucco', 'BrkComm', 'AsphShn', 'Stone', 'ImStucc', 'CBlock']"
 Exterior2nd,categorical,16 unique values
-MasVnrType,categorical,"['BrkFace', 'Stone', 'BrkCmn']"
+MasVnrType,categorical,"['BrkFace', 'None', 'Stone', 'BrkCmn', '<None>']"
 MasVnrArea,numeric (continuous),327 unique values
 ExterQual,categorical,"['Gd', 'TA', 'Ex', 'Fa']"
 ExterCond,categorical,"['TA', 'Gd', 'Fa', 'Po', 'Ex']"
 Foundation,categorical,"['PConc', 'CBlock', 'BrkTil', 'Wood', 'Slab', 'Stone']"
-BsmtQual,categorical,"['Gd', 'TA', 'Ex', 'Fa']"
-BsmtCond,categorical,"['TA', 'Gd', 'Fa', 'Po']"
-BsmtExposure,categorical,"['No', 'Gd', 'Mn', 'Av']"
-BsmtFinType1,categorical,"['GLQ', 'ALQ', 'Unf', 'Rec', 'BLQ', 'LwQ']"
+BsmtQual,categorical,"['Gd', 'TA', 'Ex', '<None>', 'Fa']"
+BsmtCond,categorical,"['TA', 'Gd', '<None>', 'Fa', 'Po']"
+BsmtExposure,categorical,"['No', 'Gd', 'Mn', 'Av', '<None>']"
+BsmtFinType1,categorical,"['GLQ', 'ALQ', 'Unf', 'Rec', 'BLQ', '<None>', 'LwQ']"
 BsmtFinSF1,numeric (continuous),637 unique values
-BsmtFinType2,categorical,"['Unf', 'BLQ', 'ALQ', 'Rec', 'LwQ', 'GLQ']"
+BsmtFinType2,categorical,"['Unf', 'BLQ', '<None>', 'ALQ', 'Rec', 'LwQ', 'GLQ']"
 BsmtFinSF2,numeric (continuous),144 unique values
 BsmtUnfSF,numeric (continuous),780 unique values
 TotalBsmtSF,numeric (continuous),721 unique values
 Heating,categorical,"['GasA', 'GasW', 'Grav', 'Wall', 'OthW', 'Floor']"
 HeatingQC,categorical,"['Ex', 'Gd', 'TA', 'Fa', 'Po']"
 CentralAir,categorical,"['Y', 'N']"
-Electrical,categorical,"['SBrkr', 'FuseF', 'FuseA', 'FuseP', 'Mix']"
+Electrical,categorical,"['SBrkr', 'FuseF', 'FuseA', 'FuseP', 'Mix', '<None>']"
 1stFlrSF,numeric (continuous),753 unique values
 2ndFlrSF,numeric (continuous),417 unique values
 LowQualFinSF,numeric (continuous),24 unique values
 GrLivArea,numeric (continuous),861 unique values
-BsmtFullBath,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3)]"
-BsmtHalfBath,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2)]"
-FullBath,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3)]"
-HalfBath,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2)]"
-BedroomAbvGr,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(8)]"
-KitchenAbvGr,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3)]"
+BsmtFullBath,numeric (discrete),"[0, 1, 2, 3]"
+BsmtHalfBath,numeric (discrete),"[0, 1, 2]"
+FullBath,numeric (discrete),"[0, 1, 2, 3]"
+HalfBath,numeric (discrete),"[0, 1, 2]"
+BedroomAbvGr,numeric (discrete),"[0, 1, 2, 3, 4, 5, 6, 8]"
+KitchenAbvGr,numeric (discrete),"[0, 1, 2, 3]"
 KitchenQual,categorical,"['Gd', 'TA', 'Ex', 'Fa']"
-TotRmsAbvGrd,numeric (discrete),"[np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10), np.int64(11), np.int64(12), np.int64(14)]"
+TotRmsAbvGrd,numeric (discrete),"[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14]"
 Functional,categorical,"['Typ', 'Min1', 'Maj1', 'Min2', 'Mod', 'Maj2', 'Sev']"
-Fireplaces,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3)]"
-FireplaceQu,categorical,"['TA', 'Gd', 'Fa', 'Ex', 'Po']"
-GarageType,categorical,"['Attchd', 'Detchd', 'BuiltIn', 'CarPort', 'Basment', '2Types']"
-GarageYrBlt,numeric (continuous),97 unique values
-GarageFinish,categorical,"['RFn', 'Unf', 'Fin']"
-GarageCars,numeric (discrete),"[np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4)]"
+Fireplaces,numeric (discrete),"[0, 1, 2, 3]"
+FireplaceQu,categorical,"['<None>', 'TA', 'Gd', 'Fa', 'Ex', 'Po']"
+GarageType,categorical,"['Attchd', 'Detchd', 'BuiltIn', 'CarPort', '<None>', 'Basment', '2Types']"
+GarageYrBlt,numeric (continuous),98 unique values
+GarageFinish,categorical,"['RFn', 'Unf', 'Fin', '<None>']"
+GarageCars,numeric (discrete),"[0, 1, 2, 3, 4]"
 GarageArea,numeric (continuous),441 unique values
-GarageQual,categorical,"['TA', 'Fa', 'Gd', 'Ex', 'Po']"
-GarageCond,categorical,"['TA', 'Fa', 'Gd', 'Po', 'Ex']"
+GarageQual,categorical,"['TA', 'Fa', 'Gd', '<None>', 'Ex', 'Po']"
+GarageCond,categorical,"['TA', 'Fa', '<None>', 'Gd', 'Po', 'Ex']"
 PavedDrive,categorical,"['Y', 'N', 'P']"
 WoodDeckSF,numeric (continuous),274 unique values
 OpenPorchSF,numeric (continuous),202 unique values
 EnclosedPorch,numeric (continuous),120 unique values
 3SsnPorch,numeric (continuous),20 unique values
 ScreenPorch,numeric (continuous),76 unique values
-PoolArea,numeric (discrete),"[np.int64(0), np.int64(480), np.int64(512), np.int64(519), np.int64(555), np.int64(576), np.int64(648), np.int64(738)]"
-PoolQC,categorical,"['Ex', 'Fa', 'Gd']"
-Fence,categorical,"['MnPrv', 'GdWo', 'GdPrv', 'MnWw']"
-MiscFeature,categorical,"['Shed', 'Gar2', 'Othr', 'TenC']"
+PoolArea,numeric (discrete),"[0, 480, 512, 519, 555, 576, 648, 738]"
+PoolQC,categorical,"['<None>', 'Ex', 'Fa', 'Gd']"
+Fence,categorical,"['<None>', 'MnPrv', 'GdWo', 'GdPrv', 'MnWw']"
+MiscFeature,categorical,"['<None>', 'Shed', 'Gar2', 'Othr', 'TenC']"
 MiscVal,numeric (continuous),21 unique values
-MoSold,numeric (discrete),"[np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10), np.int64(11), np.int64(12)]"
-YrSold,numeric (discrete),"[np.int64(2006), np.int64(2007), np.int64(2008), np.int64(2009), np.int64(2010)]"
+MoSold,numeric (discrete),"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+YrSold,numeric (discrete),"[2006, 2007, 2008, 2009, 2010]"
 SaleType,categorical,"['WD', 'New', 'COD', 'ConLD', 'ConLI', 'CWD', 'ConLw', 'Con', 'Oth']"
 SaleCondition,categorical,"['Normal', 'Abnorml', 'Partial', 'AdjLand', 'Alloca', 'Family']"
 SalePrice,numeric (continuous),663 unique values

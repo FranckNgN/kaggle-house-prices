@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
+INTERIM_TRAIN_DIR = INTERIM_DIR / "train"
+INTERIM_TEST_DIR = INTERIM_DIR / "test"
 PROCESSED_DIR = DATA_DIR / "processed"
 SUBMISSIONS_DIR = DATA_DIR / "submissions"
 
@@ -14,24 +16,21 @@ TRAIN_CSV = RAW_DIR / "train.csv"
 TEST_CSV = RAW_DIR / "test.csv"
 DATA_DESCRIPTION = RAW_DIR / "data_description.txt"
 
-# Interim processed files (stage 1-6)
-TRAIN_PROCESS1_CSV = INTERIM_DIR / "train_process1.csv"
-TEST_PROCESS1_CSV = INTERIM_DIR / "test_process1.csv"
+# Interim - Train files (stage 1-6)
+TRAIN_PROCESS1_CSV = INTERIM_TRAIN_DIR / "train_process1.csv"
+TRAIN_PROCESS2_CSV = INTERIM_TRAIN_DIR / "train_process2.csv"
+TRAIN_PROCESS3_CSV = INTERIM_TRAIN_DIR / "train_process3.csv"
+TRAIN_PROCESS4_CSV = INTERIM_TRAIN_DIR / "train_process4.csv"
+TRAIN_PROCESS5_CSV = INTERIM_TRAIN_DIR / "train_process5.csv"
+TRAIN_PROCESS6_CSV = INTERIM_TRAIN_DIR / "train_process6.csv"
 
-TRAIN_PROCESS2_CSV = INTERIM_DIR / "train_process2.csv"
-TEST_PROCESS2_CSV = INTERIM_DIR / "test_process2.csv"
-
-TRAIN_PROCESS3_CSV = INTERIM_DIR / "train_process3.csv"
-TEST_PROCESS3_CSV = INTERIM_DIR / "test_process3.csv"
-
-TRAIN_PROCESS4_CSV = INTERIM_DIR / "train_process4.csv"
-TEST_PROCESS4_CSV = INTERIM_DIR / "test_process4.csv"
-
-TRAIN_PROCESS5_CSV = INTERIM_DIR / "train_process5.csv"
-TEST_PROCESS5_CSV = INTERIM_DIR / "test_process5.csv"
-
-TRAIN_PROCESS6_CSV = INTERIM_DIR / "train_process6.csv"
-TEST_PROCESS6_CSV = INTERIM_DIR / "test_process6.csv"
+# Interim - Test files (stage 1-6)
+TEST_PROCESS1_CSV = INTERIM_TEST_DIR / "test_process1.csv"
+TEST_PROCESS2_CSV = INTERIM_TEST_DIR / "test_process2.csv"
+TEST_PROCESS3_CSV = INTERIM_TEST_DIR / "test_process3.csv"
+TEST_PROCESS4_CSV = INTERIM_TEST_DIR / "test_process4.csv"
+TEST_PROCESS5_CSV = INTERIM_TEST_DIR / "test_process5.csv"
+TEST_PROCESS6_CSV = INTERIM_TEST_DIR / "test_process6.csv"
 
 # Processed files
 FEATURE_SUMMARY_CSV = PROCESSED_DIR / "feature_summary.csv"
