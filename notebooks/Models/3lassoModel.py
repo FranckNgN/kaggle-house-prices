@@ -8,6 +8,7 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error, make_scorer
 from config_local import local_config
+from config_local import model_config
 
 
 def rmse_real(y_true_log, y_pred_log):
@@ -25,20 +26,24 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
 
+    cfg = model_config.LASSO
     rmse_scorer = make_scorer(rmse_real, greater_is_better=False)
-    alphas = sorted({0.01, 0.1, 30} | set(range(1, 31)))
-    param_grid = {"alpha": alphas}
+    param_grid = {"alpha": cfg["alphas"]}
 
-    cv = KFold(n_splits=5, shuffle=True, random_state=42)
-    lasso = Lasso(max_iter=10000)
+    cv = KFold(
+        n_splits=cfg["cv_n_splits"],
+        shuffle=cfg["cv_shuffle"],
+        random_state=cfg["cv_random_state"]
+    )
+    lasso = Lasso(max_iter=cfg["max_iter"])
 
     grid = GridSearchCV(
         estimator=lasso,
         param_grid=param_grid,
         cv=cv,
         scoring=rmse_scorer,
-        n_jobs=-1,
-        refit=True
+        n_jobs=cfg["n_jobs"],
+        refit=cfg["refit"]
     )
 
     grid.fit(X, y)

@@ -8,6 +8,7 @@ from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
+from config_local import model_config
 
 
 if __name__ == "__main__":
@@ -18,17 +19,16 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
 
+    cfg = model_config.ELASTIC_NET
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y,
+        test_size=cfg["test_size"],
+        random_state=cfg["random_state"]
     )
 
-    alphas = [
-        0.0001, 0.0005, 0.0007, 0.0008, 0.0009,
-        0.0010, 0.0011, 0.0012, 0.0013, 0.0015,
-        0.002, 0.005, 0.01
-    ]
-    l1_ratios = [0.1, 0.3, 0.5, 0.7, 0.9]
-    max_iter = 20000
+    alphas = cfg["alphas"]
+    l1_ratios = cfg["l1_ratios"]
+    max_iter = cfg["max_iter"]
 
     best_alpha = None
     best_l1_ratio = None

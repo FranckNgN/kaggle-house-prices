@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 from catboost import CatBoostRegressor
 from config_local import local_config
+from config_local import model_config
 
 
 if __name__ == "__main__":
@@ -18,58 +19,57 @@ if __name__ == "__main__":
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-
-    l2_leaf_regs = [3.0, 5.0]
+    cfg = model_config.CATBOOST
+    kf = KFold(
+        n_splits=cfg["cv"]["n_splits"],
+        shuffle=cfg["cv"]["shuffle"],
+        random_state=cfg["cv"]["random_state"]
+    )
 
     best_params = None
     best_cv_rmse = float("inf")
 
     print("Searching best CatBoost hyperparameters with 5-Fold CV...\n")
 
-    for l2 in l2_leaf_regs:
-        params = {
-            "loss_function": "RMSE",
-            "learning_rate": 0.03,
-            "depth": 6,
-            "l2_leaf_reg": l2,
-            "iterations": 2000,
-            "random_seed": 42,
-            "verbose": 0,
-            "thread_count": -1,
-            "task_type": "GPU",
-            "devices": "0",
-        }
+    # Generate all parameter combinations from search space
+    base_params = cfg["base_params"].copy()
+    search_space = cfg["search_space"]
+    
+    # Simple grid search over search_space
+    for param_name, param_values in search_space.items():
+        for param_value in param_values:
+            params = base_params.copy()
+            params[param_name] = param_value
 
-        fold_rmses = []
-        print(f"Testing params: lr=0.03, depth=6, l2={l2}, iters=2000")
+            fold_rmses = []
+            param_str = ", ".join([f"{k}={v}" for k, v in params.items() if k in ["learning_rate", "depth", "l2_leaf_reg", "iterations"]])
+            print(f"Testing params: {param_str}")
 
-        for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):
-            print(f"    Starting fold {fold}...")
-            X_tr = X.iloc[train_idx]
-            X_val = X.iloc[val_idx]
-            y_tr = y.iloc[train_idx]
-            y_val = y.iloc[val_idx]
+            for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):
+                print(f"    Starting fold {fold}...")
+                X_tr = X.iloc[train_idx]
+                X_val = X.iloc[val_idx]
+                y_tr = y.iloc[train_idx]
+                y_val = y.iloc[val_idx]
 
-            model = CatBoostRegressor(**params)
-            model.fit(
-                X_tr, y_tr,
-                eval_set=(X_val, y_val),
-                use_best_model=True,
-                verbose=500
-            )
+                model = CatBoostRegressor(**params)
+                model.fit(
+                    X_tr, y_tr,
+                    eval_set=(X_val, y_val),
+                    **cfg["fit_params"]
+                )
 
-            y_pred_log = model.predict(X_val)
-            rmse = mean_squared_error(y_val, y_pred_log) ** 0.5
-            fold_rmses.append(rmse)
-            print(f"  Fold {fold} log-RMSE: {rmse:.5f}")
+                y_pred_log = model.predict(X_val)
+                rmse = mean_squared_error(y_val, y_pred_log) ** 0.5
+                fold_rmses.append(rmse)
+                print(f"  Fold {fold} log-RMSE: {rmse:.5f}")
 
-        mean_rmse = np.mean(fold_rmses)
-        print(f"--> Mean CV log-RMSE for these params: {mean_rmse:.5f}\n")
+            mean_rmse = np.mean(fold_rmses)
+            print(f"--> Mean CV log-RMSE for these params: {mean_rmse:.5f}\n")
 
-        if mean_rmse < best_cv_rmse:
-            best_cv_rmse = mean_rmse
-            best_params = params.copy()
+            if mean_rmse < best_cv_rmse:
+                best_cv_rmse = mean_rmse
+                best_params = params.copy()
 
     print("\n=====================================")
     print("Best CatBoost params found:")
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     final_cat = CatBoostRegressor(**best_params)
     print("Training final CatBoost model on all data with best hyperparameters...")
-    final_cat.fit(X, y, verbose=200)
+    final_cat.fit(X, y, verbose=cfg["final_fit_verbose"])
 
     test_pred_log_cat = final_cat.predict(test)
     test_pred_real_cat = np.expm1(test_pred_log_cat)

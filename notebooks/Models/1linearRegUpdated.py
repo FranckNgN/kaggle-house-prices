@@ -8,6 +8,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
+from config_local import model_config
 
 
 if __name__ == "__main__":
@@ -18,7 +19,12 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    cfg = model_config.LINEAR_REGRESSION
+    kf = KFold(
+        n_splits=cfg["kfold_n_splits"],
+        shuffle=cfg["kfold_shuffle"],
+        random_state=cfg["kfold_random_state"]
+    )
     rmse_scores = []
 
     for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):

@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 from xgboost import XGBRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from config_local import local_config
+from config_local import model_config
 
 
 if __name__ == "__main__":
@@ -18,32 +19,13 @@ if __name__ == "__main__":
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
 
-    xgb = XGBRegressor(
-        objective="reg:squarederror",
-        random_state=42,
-        n_jobs=-1,
-        eval_metric="rmse",
-        tree_method="hist",
-        device="cuda"
-    )
-
-    param_dist = {
-        "n_estimators": [800, 1000, 1200],
-        "learning_rate": [0.05, 0.04, 0.03],
-        "max_depth": [3, 4, 5],
-        "subsample": [0.8, 1.0],
-        "colsample_bytree": [0.7, 0.9],
-    }
+    cfg = model_config.XGBOOST
+    xgb = XGBRegressor(**cfg["base_params"])
 
     random_search = RandomizedSearchCV(
         estimator=xgb,
-        param_distributions=param_dist,
-        n_iter=30,
-        scoring="neg_mean_squared_error",
-        cv=5,
-        n_jobs=-1,
-        verbose=2,
-        random_state=42,
+        param_distributions=cfg["param_dist"],
+        **cfg["search"]
     )
 
     print("Running RandomizedSearchCV for XGBoost...")

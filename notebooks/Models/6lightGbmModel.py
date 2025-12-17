@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 from lightgbm import LGBMRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from config_local import local_config
+from config_local import model_config
 
 
 if __name__ == "__main__":
@@ -18,32 +19,13 @@ if __name__ == "__main__":
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
 
-    lgbm = LGBMRegressor(
-        objective="regression",
-        random_state=42,
-        n_jobs=-1,
-        device_type="gpu",
-    )
-
-    param_dist = {
-        "num_leaves": [31, 63],
-        "max_depth": [5, 7, -1],
-        "learning_rate": [0.05, 0.04, 0.03],
-        "n_estimators": [800, 1000, 1200],
-        "subsample": [0.8, 1.0],
-        "colsample_bytree": [0.7, 0.9],
-        "min_child_samples": [10, 20],
-    }
+    cfg = model_config.LIGHTGBM
+    lgbm = LGBMRegressor(**cfg["base_params"])
 
     random_search = RandomizedSearchCV(
         estimator=lgbm,
-        param_distributions=param_dist,
-        n_iter=30,
-        scoring="neg_mean_squared_error",
-        cv=5,
-        n_jobs=-1,
-        verbose=2,
-        random_state=42,
+        param_distributions=cfg["param_dist"],
+        **cfg["search"]
     )
 
     print("Running RandomizedSearchCV for LightGBM...")
