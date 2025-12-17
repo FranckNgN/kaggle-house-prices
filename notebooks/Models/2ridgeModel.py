@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import os
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.metrics import mean_squared_error, make_scorer
+from config_local import local_config
+
+
+def rmse_real(y_true_log, y_pred_log):
+    y_true = np.exp(y_true_log)
+    y_pred = np.exp(y_pred_log)
+    mse = mean_squared_error(y_true, y_pred)
+    return np.sqrt(mse)
+
+
+if __name__ == "__main__":
+    train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
+    test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
+    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
+
+    y = train['logSP']
+    X = train.drop(['logSP'], axis=1)
+
+    rmse_scorer = make_scorer(rmse_real, greater_is_better=False)
+    alphas = sorted({0.01, 0.1, 30} | set(range(1, 31)))
+    param_grid = {"alpha": alphas}
+
+    cv = KFold(n_splits=5, shuffle=True, random_state=42)
+    ridge = Ridge()
+
+    grid = GridSearchCV(
+        estimator=ridge,
+        param_grid=param_grid,
+        cv=cv,
+        scoring=rmse_scorer,
+        n_jobs=-1,
+        refit=True
+    )
+
+    grid.fit(X, y)
+
+    best_alpha = grid.best_params_["alpha"]
+    best_rmse_cv = -grid.best_score_
+
+    print(f"Best alpha from CV: {best_alpha}")
+    print(f"CV RMSE (real scale) with best alpha: {best_rmse_cv:.4f}")
+
+    best_model = grid.best_estimator_
+    test_pred_log = best_model.predict(test)
+    test_pred_real = np.expm1(test_pred_log)
+
+    submission = pd.DataFrame({
+        "Id": testRaw.index,
+        "SalePrice": test_pred_real
+    })
+
+    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "ridgeModel_KFold.csv")
+    submission.to_csv(out_path, index=False)

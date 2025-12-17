@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import os
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from config_local import local_config
+
+
+if __name__ == "__main__":
+    train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
+    test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
+    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
+
+    y = train['logSP']
+    X = train.drop(['logSP'], axis=1)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    alphas = [
+        0.0001, 0.0005, 0.0007, 0.0008, 0.0009,
+        0.0010, 0.0011, 0.0012, 0.0013, 0.0015,
+        0.002, 0.005, 0.01
+    ]
+    l1_ratios = [0.1, 0.3, 0.5, 0.7, 0.9]
+    max_iter = 20000
+
+    best_alpha = None
+    best_l1_ratio = None
+    best_rmse = float("inf")
+
+    print("Searching best hyperparameters for ElasticNet...\n")
+
+    for a in alphas:
+        for l1 in l1_ratios:
+            model = ElasticNet(alpha=a, l1_ratio=l1, max_iter=max_iter)
+            model.fit(X_train, y_train)
+
+            y_pred = model.predict(X_test)
+            y_pred_real = np.exp(y_pred)
+            y_test_real = np.exp(y_test)
+
+            mse = mean_squared_error(y_test_real, y_pred_real)
+            rmse = mse ** 0.5
+
+            print(f"alpha={a:.6f}, l1_ratio={l1:.1f} -> RMSE={rmse:.2f}")
+
+            if rmse < best_rmse:
+                best_rmse = rmse
+                best_alpha = a
+                best_l1_ratio = l1
+
+    print("\n===============================")
+    print(f"Best ElasticNet → alpha={best_alpha}, l1_ratio={best_l1_ratio}, RMSE={best_rmse:.2f}")
+    print("===============================\n")
+
+    best_model = ElasticNet(alpha=best_alpha, l1_ratio=best_l1_ratio, max_iter=max_iter)
+    best_model.fit(X_train, y_train)
+
+    test_pred_log = best_model.predict(test)
+    test_pred_real = np.expm1(test_pred_log)
+
+    submission = pd.DataFrame({
+        "Id": testRaw.index,
+        "SalePrice": test_pred_real
+    })
+
+    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "elasticNetModel.csv")
+    submission.to_csv(out_path, index=False)
