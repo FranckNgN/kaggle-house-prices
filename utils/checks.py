@@ -1,22 +1,40 @@
+"""Data validation and quality checks for preprocessing pipeline."""
 import pandas as pd
 import numpy as np
 from scipy import stats
+from pathlib import Path
 
-#SalePrice and log1 Sale price sanity check
-import numpy as np, pandas as pd
+try:
+    import config_local.local_config as cfg
+except ImportError:
+    cfg = None
 
-import config_local.local_config as cfg  
-
-import numpy as np, pandas as pd
-import config_local.local_config as cfg
-
-def check():
-    # --- Load
-    train  = pd.read_csv(cfg.TRAIN_CSV)
-    filled = pd.read_csv(cfg.TRAIN_FILLED_CSV)
-    out_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_CSV)
-    log_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_LOG1_CSV)              # has logSP only
-    enc_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_LOG1_CATENCODED_CSV)   # has logSP + dummies
+def check() -> None:
+    """
+    Validate preprocessing pipeline outputs.
+    
+    Note: This function checks the old pipeline structure.
+    Update paths if using current pipeline (process1-6).
+    """
+    if cfg is None:
+        print("⚠️  config_local not available. Skipping checks.")
+        return
+    
+    # Check if old config paths exist, otherwise use new structure
+    if hasattr(cfg, 'TRAIN_FILLED_CSV') and Path(cfg.TRAIN_FILLED_CSV).exists():
+        # Old pipeline structure
+        train = pd.read_csv(cfg.TRAIN_CSV)
+        filled = pd.read_csv(cfg.TRAIN_FILLED_CSV)
+        out_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_CSV)
+        log_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_LOG1_CSV)
+        enc_df = pd.read_csv(cfg.TRAIN_OUTLIER_FILLED_LOG1_CATENCODED_CSV)
+    else:
+        # New pipeline structure
+        train = pd.read_csv(cfg.TRAIN_CSV)
+        filled = pd.read_csv(cfg.TRAIN_PROCESS1_CSV)
+        out_df = pd.read_csv(cfg.TRAIN_PROCESS2_CSV)
+        log_df = pd.read_csv(cfg.TRAIN_PROCESS2_CSV)
+        enc_df = pd.read_csv(cfg.TRAIN_PROCESS6_CSV)
 
     print("📂 Files:")
     for n,p in [("train",cfg.TRAIN_CSV),("filled",cfg.TRAIN_FILLED_CSV),
@@ -94,15 +112,27 @@ DEFAULT_THRESHOLDS = {
     "ks_norm": 0.08,
 }
 
-def _ks_stat(s: pd.Series, dist_name: str) -> float:
+def _ks_stat(s: pd.Series, dist_name: str = "norm") -> float:
+    """Calculate Kolmogorov-Smirnov statistic for distribution fit."""
     dist = getattr(stats, dist_name)
     params = dist.fit(s.dropna())
     ks_stat, _ = stats.kstest(s.dropna(), dist_name, args=params)
     return float(ks_stat)
 
-def evaluate_many(series_dict: dict[str, pd.Series],
-                  thresholds: dict[str, float] | None = None) -> pd.DataFrame:
-    """Check distribution shape & fit for multiple series."""
+def evaluate_many(
+    series_dict: dict[str, pd.Series],
+    thresholds: dict[str, float] | None = None
+) -> pd.DataFrame:
+    """
+    Check distribution shape & fit for multiple series.
+    
+    Args:
+        series_dict: Dictionary mapping series names to Series objects
+        thresholds: Optional custom thresholds for metrics
+        
+    Returns:
+        DataFrame with evaluation metrics for each series
+    """
     th = {**DEFAULT_THRESHOLDS, **(thresholds or {})}
     rows = []
 
