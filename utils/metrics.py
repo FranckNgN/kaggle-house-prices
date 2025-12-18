@@ -31,7 +31,7 @@ def log_model_result(
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "model": model_name,
         "rmse": round(rmse, 6),
-        "hyperparams": json.dumps(hyperparams),
+        "hyperparams": json.dumps(hyperparams, sort_keys=True),
         "notes": notes if notes else ""
     }
     
@@ -39,6 +39,19 @@ def log_model_result(
     if log_file.exists():
         try:
             df = pd.read_csv(log_file)
+            
+            # Check for redundancy (same model, same hyperparams, same RMSE)
+            # We compare hyperparams as JSON strings
+            is_redundant = not df[
+                (df["model"] == model_name) & 
+                (df["rmse"] == new_entry["rmse"]) & 
+                (df["hyperparams"] == new_entry["hyperparams"])
+            ].empty
+            
+            if is_redundant:
+                print(f"    [Skip Log] Identical run already exists for {model_name} (RMSE: {rmse:.6f}).")
+                return
+
             df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
         except Exception:
             # Fallback if CSV is corrupted
