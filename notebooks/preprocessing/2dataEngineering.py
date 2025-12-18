@@ -16,6 +16,7 @@ from scipy import stats
 from sklearn.preprocessing import PowerTransformer, QuantileTransformer
 from scipy.stats import boxcox
 from config_local import local_config
+from utils.engineering import update_engineering_summary
 
 
 if __name__ == "__main__":
@@ -83,6 +84,14 @@ if __name__ == "__main__":
 
     train = add_basic_features(train)
     test = add_basic_features(test)
+    
+    # Log engineering details
+    update_engineering_summary("Data Engineering", {
+        "target_transform": "log1p",
+        "outlier_removal": "GrLivArea > 4000 & SalePrice < 300000",
+        "new_features": ["Age", "Garage_Age", "RemodAge", "TotalSF", "TotalBath", "TotalPorchSF"]
+    })
+
     # --------------------------------------
 
     train["logSP"] = salePrice_df['logSP']

@@ -18,6 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 try:
     import config_local.local_config as config
     from utils.validation import validate_dataframe, validate_column_parity, check_skewness
+    from utils.engineering import reset_engineering_summary
 except ImportError:
     print("ERROR: Required modules not found.")
     sys.exit(1)
@@ -144,6 +145,7 @@ def run_file(path: Path) -> None:
 
 def main() -> None:
     """Main entry point for preprocessing pipeline."""
+    reset_engineering_summary()
     clean_interim()
 
     # Auto-detect numbered py files or notebooks

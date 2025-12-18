@@ -4,6 +4,7 @@ from pathlib import Path
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import config_local.local_config as local_config
+from utils.engineering import update_engineering_summary
 
 
 from typing import Tuple, Dict
@@ -165,6 +166,15 @@ def main() -> None:
 
     print("Running K-Means clustering...")
     train, test = add_kmeans_clusters(train, test)
+
+    # Log engineering details
+    update_engineering_summary("Feature Engineering", {
+        "kmeans_k": 4,
+        "kmeans_cols": ["GrLivArea", "TotalBsmtSF", "1stFlrSF", "GarageCars", "YearBuilt", "OverallQual"],
+        "luxury_flags": ["HasPool", "Has2ndFlr", "HasGarage", "HasBsmt", "HasFireplace"],
+        "interactions": ["Qual_x_TotalSF", "Kitchen_x_TotalSF", "Cond_x_Age"],
+        "benchmarks": ["Neighborhood", "MSSubClass", "MSZoning", "OverallQual", "Decade"]
+    })
 
     print("Saving Processed 4 data...")
     Path(local_config.TRAIN_PROCESS4_CSV).parent.mkdir(parents=True, exist_ok=True)

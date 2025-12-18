@@ -1,0 +1,44 @@
+{
+  "Data Engineering": {
+    "target_transform": "log1p",
+    "outlier_removal": "GrLivArea > 4000 & SalePrice < 300000",
+    "new_features": [
+      "Age",
+      "Garage_Age",
+      "RemodAge",
+      "TotalSF",
+      "TotalBath",
+      "TotalPorchSF"
+    ]
+  },
+  "Feature Engineering": {
+    "kmeans_k": 4,
+    "kmeans_cols": [
+      "GrLivArea",
+      "TotalBsmtSF",
+      "1stFlrSF",
+      "GarageCars",
+      "YearBuilt",
+      "OverallQual"
+    ],
+    "luxury_flags": [
+      "HasPool",
+      "Has2ndFlr",
+      "HasGarage",
+      "HasBsmt",
+      "HasFireplace"
+    ],
+    "interactions": [
+      "Qual_x_TotalSF",
+      "Kitchen_x_TotalSF",
+      "Cond_x_Age"
+    ],
+    "benchmarks": [
+      "Neighborhood",
+      "MSSubClass",
+      "MSZoning",
+      "OverallQual",
+      "Decade"
+    ]
+  }
+}
