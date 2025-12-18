@@ -49,6 +49,11 @@ if __name__ == "__main__":
     cfg = model_config.STACKING
     base_model_names = cfg["base_models"]
     
+    # Get modification time of input data for cache validation
+    train_mtime = os.path.getmtime(local_config.TRAIN_PROCESS6_CSV)
+    test_mtime = os.path.getmtime(local_config.TEST_PROCESS6_CSV)
+    latest_input_mtime = max(train_mtime, test_mtime)
+
     kf = KFold(
         n_splits=cfg["cv_n_splits"],
         shuffle=cfg["cv_shuffle"],
@@ -59,19 +64,28 @@ if __name__ == "__main__":
     oof_train = np.zeros((X.shape[0], len(base_model_names)))
     oof_test = np.zeros((X_test.shape[0], len(base_model_names)))
 
-    print(f"Starting stacking with {len(base_model_names)} base models...")
+    print(f"Data Shapes: Train={X.shape}, Test={X_test.shape}")
+    print(f"Starting stacking with {len(base_model_names)} base models: {', '.join(base_model_names)}")
 
     for i, model_name in enumerate(base_model_names):
+        print(f"\n[{i+1}/{len(base_model_names)}] Model: {model_name}")
         oof_train_path = local_config.OOF_DIR / f"{model_name}_oof_train.npy"
         oof_test_path = local_config.OOF_DIR / f"{model_name}_oof_test.npy"
 
+        # Check if cache exists and is newer than the input data
+        cache_valid = False
         if oof_train_path.exists() and oof_test_path.exists():
-            print(f"  Loading cached predictions for: {model_name}")
+            cache_mtime = min(os.path.getmtime(oof_train_path), os.path.getmtime(oof_test_path))
+            if cache_mtime > latest_input_mtime:
+                cache_valid = True
+            else:
+                print(f"  Cache stale (input data updated). Re-training...")
+
+        if cache_valid:
+            print(f"  Loading valid cached predictions...")
             oof_train[:, i] = np.load(oof_train_path)
             oof_test[:, i] = np.load(oof_test_path)
         else:
-            print(f"  Training base model: {model_name}")
-            
             # Get best params for this model if they exist in config
             model_cfg = model_config.get_model_config(model_name)
             params = model_cfg.get("base_params", {}).copy()
@@ -80,6 +94,7 @@ if __name__ == "__main__":
             test_preds_fold = np.zeros((X_test.shape[0], cfg["cv_n_splits"]))
 
             for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
+                print(f"    - Processing fold {fold+1}/{cfg['cv_n_splits']}...", end="\r")
                 X_train, X_val = X[train_idx], X[val_idx]
                 y_train, y_val = y[train_idx], y[val_idx]
 
@@ -88,6 +103,7 @@ if __name__ == "__main__":
 
                 oof_train[val_idx, i] = model.predict(X_val)
                 test_preds_fold[:, fold] = model.predict(X_test)
+            print() # Newline after folds are done
             
             # Average test predictions across folds
             oof_test[:, i] = test_preds_fold.mean(axis=1)
@@ -100,7 +116,7 @@ if __name__ == "__main__":
         print(f"    {model_name} OOF RMSE: {rmse:.4f}")
 
     # Meta-model training
-    print(f"Training meta-model: {cfg['meta_model']}")
+    print(f"\nTraining meta-model: {cfg['meta_model'].upper()}")
     if cfg["meta_model"] == "lasso":
         meta_model = Lasso(**cfg["meta_model_params"])
     elif cfg["meta_model"] == "ridge":
@@ -111,6 +127,7 @@ if __name__ == "__main__":
     meta_model.fit(oof_train, y)
     
     # Final predictions
+    print("Generating final predictions...")
     final_pred_log = meta_model.predict(oof_test)
     final_pred_real = np.expm1(final_pred_log)
 
