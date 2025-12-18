@@ -40,6 +40,7 @@ if __name__ == "__main__":
         model_name="random_forest",
         rmse=best_rmse,
         hyperparams={**cfg["base_params"], **best_params},
+        features=X.columns.tolist(),
         notes="Optuna Optimized"
     )
 

@@ -10,6 +10,7 @@ from sklearn.metrics import mean_squared_error, make_scorer
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
+from utils.metrics import log_model_result
 
 
 def rmse_real(y_true_log, y_pred_log):
@@ -55,6 +56,15 @@ if __name__ == "__main__":
 
     print(f"Best alpha from CV: {best_alpha}")
     print(f"CV RMSE (real scale) with best alpha: {best_rmse_cv:.4f}")
+
+    # Log results
+    log_model_result(
+        model_name="ridge",
+        rmse=best_rmse_cv,
+        hyperparams={"alpha": best_alpha},
+        features=X.columns.tolist(),
+        notes="GridSearchCV optimized"
+    )
 
     best_model = grid.best_estimator_
     test_pred_log = best_model.predict(test)

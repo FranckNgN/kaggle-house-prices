@@ -23,8 +23,15 @@ def show_performance(log_path="runs/model_performance.csv"):
     display_df = df.copy()
     display_df['rmse'] = display_df['rmse'].map('{:.6f}'.format)
     
+    # Calculate feature count if available
+    if 'features' in display_df.columns:
+        display_df['feat_count'] = display_df['features'].apply(lambda x: len(json.loads(x)) if pd.notnull(x) else 0)
+    else:
+        display_df['feat_count'] = 0
+
     # Print the table
-    print(display_df[['timestamp', 'model', 'rmse', 'notes']].to_string(index=False))
+    cols_to_show = ['timestamp', 'model', 'rmse', 'feat_count', 'notes']
+    print(display_df[cols_to_show].to_string(index=False))
     
     print("\n" + "="*80)
     print("      BEST RUN FOR EACH MODEL")
@@ -33,7 +40,12 @@ def show_performance(log_path="runs/model_performance.csv"):
     # Get best RMSE for each model
     best_df = df.loc[df.groupby('model')['rmse'].idxmin()].sort_values('rmse')
     best_df['rmse'] = best_df['rmse'].map('{:.6f}'.format)
-    print(best_df[['model', 'rmse', 'timestamp']].to_string(index=False))
+    if 'features' in best_df.columns:
+        best_df['feat_count'] = best_df['features'].apply(lambda x: len(json.loads(x)) if pd.notnull(x) else 0)
+    else:
+        best_df['feat_count'] = 0
+    
+    print(best_df[['model', 'rmse', 'feat_count', 'timestamp']].to_string(index=False))
     print("="*80 + "\n")
 
 if __name__ == "__main__":

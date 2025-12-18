@@ -44,6 +44,7 @@ if __name__ == "__main__":
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
 
     y = train["logSP"].values
+    feature_names = train.drop(columns=["logSP"]).columns.tolist()
     X = train.drop(columns=["logSP"]).values
     X_test = test.values
 
@@ -127,6 +128,7 @@ if __name__ == "__main__":
             model_name=model_name,
             rmse=rmse,
             hyperparams=log_params,
+            features=feature_names,
             notes="Base model for Stacking"
         )
 
@@ -154,6 +156,7 @@ if __name__ == "__main__":
             "meta_params": cfg.get("meta_model_params", {}),
             "base_models": base_model_names
         },
+        features=base_model_names,
         notes=f"Full Stacking with {len(base_model_names)} models"
     )
     
