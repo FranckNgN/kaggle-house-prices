@@ -19,7 +19,7 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
 
-    cfg = model_config.LINEAR_REGRESSION
+    cfg = model_config.LINEAR_REGRESSION_UPDATED
     kf = KFold(
         n_splits=cfg["kfold_n_splits"],
         shuffle=cfg["kfold_shuffle"],
@@ -62,6 +62,6 @@ if __name__ == "__main__":
     submission = load_sample_submission()
     submission["SalePrice"] = test_pred
 
-    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "linearModel_KFold.csv")
+    out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)
     print("Saved:", out_path)

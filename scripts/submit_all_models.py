@@ -16,27 +16,32 @@ from utils.kaggle_helper import submit_and_check, load_submission_log
 
 
 def get_available_submissions() -> List[Dict]:
-    """Get list of available submission CSV files."""
+    """Get list of available submission CSV files (searching recursively)."""
     submissions_dir = Path("data/submissions")
     if not submissions_dir.exists():
         return []
     
-    # Exclude sample_submission.csv
+    # Exclude sample_submission.csv, search recursively
     csv_files = [
-        f for f in submissions_dir.glob("*.csv")
+        f for f in submissions_dir.rglob("*.csv")
         if f.name != "sample_submission.csv"
     ]
     
     submissions = []
     for csv_file in sorted(csv_files):
-        # Generate model name from filename
-        model_name = csv_file.stem.replace("_", " ").replace("Model", "").strip()
+        # Generate model name from filename or parent folder
+        if csv_file.parent != submissions_dir:
+            model_name = csv_file.parent.name.replace("_", " ").title()
+        else:
+            model_name = csv_file.stem.replace("_", " ").replace("Model", "").strip()
+            
         if not model_name:
             model_name = csv_file.stem
         
         submissions.append({
             "file": str(csv_file),
             "name": csv_file.name,
+            "path": str(csv_file.relative_to(PROJECT_ROOT)),
             "model": model_name
         })
     

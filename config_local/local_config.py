@@ -38,6 +38,26 @@ SALEPRICE_TRANSFORMS_CSV = PROCESSED_DIR / "salePrice_transforms.csv"
 SAMPLE_SUBMISSION_CSV = SUBMISSIONS_DIR / "sample_submission.csv"
 
 
+def get_model_submission_path(model_name: str, filename: str = None) -> Path:
+    """
+    Get the path for a model's submission file, creating a subfolder for the model.
+    
+    Args:
+        model_name: Name of the model (e.g., 'xgboost', 'random_forest')
+        filename: Optional filename. If None, defaults to '{model_name}_Model.csv'
+        
+    Returns:
+        Path object pointing to the submission file in the model's subfolder
+    """
+    model_folder = SUBMISSIONS_DIR / model_name.lower().replace(" ", "_")
+    model_folder.mkdir(parents=True, exist_ok=True)
+    
+    if filename is None:
+        filename = f"{model_name.lower().replace(' ', '_')}_Model.csv"
+        
+    return model_folder / filename
+
+
 def validate_paths() -> bool:
     """Validate that all required directories exist."""
     required_dirs = [

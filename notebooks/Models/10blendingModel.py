@@ -20,10 +20,17 @@ def load_predictions(cfg: dict) -> Dict[str, pd.DataFrame]:
         raise ValueError("No active models (weight > 0) found in configuration.")
         
     for name, filename in active_models.items():
+        # Look for the file in the root SUBMISSIONS_DIR or its subfolders
         path = local_config.SUBMISSIONS_DIR / filename
         if not path.exists():
-            print(f"Warning: Prediction file not found: {path}. Skipping model: {name}")
-            continue
+            # Try to find it in subfolders
+            potential_paths = list(local_config.SUBMISSIONS_DIR.rglob(filename))
+            if potential_paths:
+                path = potential_paths[0]
+            else:
+                print(f"Warning: Prediction file not found: {filename} in {local_config.SUBMISSIONS_DIR} or its subfolders. Skipping model: {name}")
+                continue
+        
         predictions[name] = pd.read_csv(path)
     
     if not predictions:
@@ -96,8 +103,8 @@ def main() -> None:
     blend = blend_predictions(predictions, cfg["weights"])
     
     # Save blended file
-    output_path = local_config.SUBMISSIONS_DIR / cfg["output_filename"]
-    blend.to_csv(output_path, index=False)
+    out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
+    blend.to_csv(out_path, index=False)
     
     print(f"--- Blended predictions saved to: {output_path} ---")
     print(f"Prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")

@@ -39,3 +39,17 @@ SALEPRICE_TRANSFORMS_CSV = PROCESSED_DIR / "salePrice_transforms.csv"
 # Submissions
 SAMPLE_SUBMISSION_CSV = SUBMISSIONS_DIR / "sample_submission.csv"
 
+
+def get_model_submission_path(model_name: str, filename: str = None) -> Path:
+    """
+    Get the path for a model's submission file, creating a subfolder for the model.
+    """
+    model_folder = SUBMISSIONS_DIR / model_name.lower().replace(" ", "_")
+    model_folder.mkdir(parents=True, exist_ok=True)
+    
+    if filename is None:
+        filename = f"{model_name.lower().replace(' ', '_')}_Model.csv"
+        
+    return model_folder / filename
+
+

@@ -107,7 +107,7 @@ if __name__ == "__main__":
     submission = load_sample_submission()
     submission["SalePrice"] = final_pred_real
 
-    out_path = os.path.join(local_config.SUBMISSIONS_DIR, cfg["output_filename"])
+    out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)
     print(f"\nStacking submission saved: {out_path}")
     

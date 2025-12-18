@@ -18,18 +18,33 @@ TRAIN_TEST_SPLIT_SIZE = 0.2
 TRAIN_TEST_SPLIT_RANDOM_STATE = 42
 
 # ============================================================================
-# LINEAR REGRESSION
+# LINEAR REGRESSION (Level 0)
 # ============================================================================
 LINEAR_REGRESSION = {
+    "submission_name": "0_linear_regression",
+    "submission_filename": "naive_lr.csv",
     "kfold_n_splits": 5,
     "kfold_shuffle": True,
     "kfold_random_state": 42,
 }
 
 # ============================================================================
-# RIDGE REGRESSION
+# LINEAR REGRESSION UPDATED (Level 1)
+# ============================================================================
+LINEAR_REGRESSION_UPDATED = {
+    "submission_name": "1_linear_regression_updated",
+    "submission_filename": "linearModel_KFold.csv",
+    "kfold_n_splits": 5,
+    "kfold_shuffle": True,
+    "kfold_random_state": 42,
+}
+
+# ============================================================================
+# RIDGE REGRESSION (Level 2)
 # ============================================================================
 RIDGE = {
+    "submission_name": "2_ridge",
+    "submission_filename": "ridgeModel_KFold.csv",
     "alphas": sorted({0.01, 0.1, 30} | set(range(1, 31))),  # 0.01, 0.1, 1..30
     "cv_n_splits": 5,
     "cv_shuffle": True,
@@ -39,9 +54,11 @@ RIDGE = {
 }
 
 # ============================================================================
-# LASSO REGRESSION
+# LASSO REGRESSION (Level 3)
 # ============================================================================
 LASSO = {
+    "submission_name": "3_lasso",
+    "submission_filename": "lassoModel_KFold.csv",
     "alphas": sorted({0.01, 0.1, 30} | set(range(1, 31))),  # 0.01, 0.1, 1..30
     "max_iter": 10000,
     "cv_n_splits": 5,
@@ -52,9 +69,11 @@ LASSO = {
 }
 
 # ============================================================================
-# ELASTIC NET
+# ELASTIC NET (Level 4)
 # ============================================================================
 ELASTIC_NET = {
+    "submission_name": "4_elastic_net",
+    "submission_filename": "elasticNetModel.csv",
     "alphas": [
         0.0001, 0.0005, 0.0007, 0.0008, 0.0009,
         0.0010, 0.0011, 0.0012, 0.0013, 0.0015,
@@ -67,9 +86,57 @@ ELASTIC_NET = {
 }
 
 # ============================================================================
-# XGBOOST
+# RANDOM FOREST (Level 5)
+# ============================================================================
+RANDOM_FOREST = {
+    "submission_name": "5_random_forest",
+    "submission_filename": "randomForest_Model.csv",
+    "base_params": {
+        "random_state": 42,
+        "n_jobs": -1,
+        "criterion": "squared_error",
+    },
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
+    "optuna_space": {
+        "n_estimators": (100, 1000),
+        "max_depth": (3, 20),
+        "min_samples_split": (2, 20),
+        "min_samples_leaf": (1, 10),
+        "max_features": (0.1, 1.0),
+    },
+}
+
+# ============================================================================
+# SUPPORT VECTOR REGRESSION (SVR) (Level 6)
+# ============================================================================
+SVR = {
+    "submission_name": "6_svr",
+    "submission_filename": "svr_Model.csv",
+    "base_params": {
+        "kernel": "rbf",
+    },
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
+    "optuna_space": {
+        "C": (0.1, 100.0, "log"),
+        "epsilon": (0.001, 1.0, "log"),
+        "gamma": (0.0001, 1.0, "log"),
+    },
+}
+
+# ============================================================================
+# XGBOOST (Level 7)
 # ============================================================================
 XGBOOST = {
+    "submission_name": "7_xgboost",
+    "submission_filename": "xgboost_Model.csv",
     # Base model parameters
     "base_params": {
         "objective": "reg:squarederror",
@@ -115,9 +182,11 @@ XGBOOST = {
 }
 
 # ============================================================================
-# LIGHTGBM
+# LIGHTGBM (Level 8)
 # ============================================================================
 LIGHTGBM = {
+    "submission_name": "8_lightgbm",
+    "submission_filename": "lightGBM_Model.csv",
     # Base model parameters
     "base_params": {
         "objective": "regression",
@@ -165,9 +234,11 @@ LIGHTGBM = {
 }
 
 # ============================================================================
-# CATBOOST
+# CATBOOST (Level 9)
 # ============================================================================
 CATBOOST = {
+    "submission_name": "9_catboost",
+    "submission_filename": "catboost_Model.csv",
     # Base parameters (fixed)
     "base_params": {
         "loss_function": "RMSE",
@@ -214,51 +285,41 @@ CATBOOST = {
 }
 
 # ============================================================================
-# RANDOM FOREST
+# BLENDING MODEL (Level 10)
 # ============================================================================
-RANDOM_FOREST = {
-    "base_params": {
-        "random_state": 42,
-        "n_jobs": -1,
-        "criterion": "squared_error",
+BLENDING = {
+    "submission_name": "10_blending",
+    "submission_filename": "blend_xgb_lgb_cat_Model.csv",
+    # Dictionary mapping model name to its CSV filename
+    "models": {
+        "xgb": XGBOOST["submission_filename"],
+        "lgb": LIGHTGBM["submission_filename"],
+        "cat": CATBOOST["submission_filename"],
+        "ridge": RIDGE["submission_filename"],
+        "lasso": LASSO["submission_filename"],
+        "elasticNet": ELASTIC_NET["submission_filename"],
+        "rf": RANDOM_FOREST["submission_filename"],
+        "svr": SVR["submission_filename"],
     },
-    "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
-        "random_state": 42,
-    },
-    "optuna_space": {
-        "n_estimators": (100, 1000),
-        "max_depth": (3, 20),
-        "min_samples_split": (2, 20),
-        "min_samples_leaf": (1, 10),
-        "max_features": (0.1, 1.0),
+    # Weights for the weighted average blend
+    "weights": {
+        "xgb": 2.0,
+        "lgb": 0.5,
+        "cat": 1.0,
+        "ridge": 0.0,
+        "lasso": 0.0,
+        "elasticNet": 0.0,
+        "rf": 0.0,
+        "svr": 0.0,
     },
 }
 
 # ============================================================================
-# SUPPORT VECTOR REGRESSION (SVR)
-# ============================================================================
-SVR = {
-    "base_params": {
-        "kernel": "rbf",
-    },
-    "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
-        "random_state": 42,
-    },
-    "optuna_space": {
-        "C": (0.1, 100.0, "log"),
-        "epsilon": (0.001, 1.0, "log"),
-        "gamma": (0.0001, 1.0, "log"),
-    },
-}
-
-# ============================================================================
-# STACKING MODEL
+# STACKING MODEL (Level 11)
 # ============================================================================
 STACKING = {
+    "submission_name": "11_stacking",
+    "submission_filename": "stacking_submission.csv",
     # Base models to use for stacking (must match names in configs)
     "base_models": [
         "xgboost", 
@@ -279,38 +340,7 @@ STACKING = {
     "cv_n_splits": 5,
     "cv_shuffle": True,
     "cv_random_state": 42,
-    "output_filename": "stacking_submission.csv"
 }
-
-# ============================================================================
-# BLENDING MODEL
-# ============================================================================
-BLENDING = {
-    # Dictionary mapping model name to its CSV filename in SUBMISSIONS_DIR
-    "models": {
-        "xgb": "xgboost_Model.csv",
-        "lgb": "lightGBM_Model.csv",
-        "cat": "catboost_Model.csv",
-        "ridge": "ridgeModel.csv",
-        "lasso": "lassoModel.csv",
-        "elasticNet": "elasticNetModel.csv",
-        "rf": "randomForest_Model.csv",
-        "svr": "svr_Model.csv",
-    },
-    # Weights for the weighted average blend
-    # Note: Only models listed here AND in "models" will be used.
-    # Set weights to 0.0 to exclude a model.
-    "weights": {
-        "xgb": 2.0,
-        "lgb": 0.5,
-        "cat": 1.0,
-        "ridge": 0.0,
-        "lasso": 0.0,
-        "elasticNet": 0.0,
-        "rf": 0.0,
-        "svr": 0.0,
-    },
-    "output_filename": "blend_xgb_lgb_cat_Model.csv"
 }
 
 # ============================================================================

@@ -116,8 +116,14 @@ def create_submission(
         "SalePrice": predictions
     })
     
-    output_path = cfg.SUBMISSIONS_DIR / filename
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if hasattr(cfg, "get_model_submission_path"):
+        # Attempt to get a better path if model name can be inferred from filename
+        model_name = filename.split("_")[0].split(".")[0]
+        output_path = cfg.get_model_submission_path(model_name, filename)
+    else:
+        output_path = cfg.SUBMISSIONS_DIR / filename
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
     submission.to_csv(output_path, index=False)
     
     return submission

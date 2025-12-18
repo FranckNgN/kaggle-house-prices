@@ -45,11 +45,11 @@ if __name__ == "__main__":
     pred_test_log = model.predict(X_test)
     pred_test_real = np.expm1(pred_test_log)
 
+    cfg = model_config.LINEAR_REGRESSION
     submission = load_sample_submission()
     submission["SalePrice"] = pred_test_real
 
-    os.makedirs(local_config.SUBMISSIONS_DIR, exist_ok=True)
-    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "naive_lr.csv")
+    out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)
 
     print(f"Submission saved -> {out_path}")
