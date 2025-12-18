@@ -2,6 +2,8 @@ import papermill as pm
 from pathlib import Path
 import sys
 import io
+import subprocess
+import os
 
 # Fix Windows console encoding for emoji characters
 if sys.platform == 'win32':
@@ -23,7 +25,8 @@ except ImportError:
 # ---------------------------------------------------
 ROOT = Path(__file__).resolve().parent                # .../notebooks/preprocessing
 PREPROC_DIR = ROOT                                    # where the numbered notebooks are
-EXT = ".ipynb"
+EXT_PY = ".py"
+EXT_IPYNB = ".ipynb"
 
 # ---------------------------------------------------
 # CLEAN INTERIM DIRECTORY
@@ -68,51 +71,84 @@ def clean_interim() -> None:
 
 
 # ---------------------------------------------------
-# RUN NOTEBOOKS
+# RUN SCRIPTS/NOTEBOOKS
 # ---------------------------------------------------
-def run_notebook(path: Path) -> None:
-    """Execute a notebook using Papermill."""
-    print(f"\nRunning notebook: {path.name}")
-    try:
-        pm.execute_notebook(
-            input_path=str(path),
-            output_path=str(path),  # overwrite in-place
-            log_output=False,
-            progress_bar=False
-        )
-        print(f"[OK] Finished: {path.name}")
-    except Exception as e:
-        print(f"[ERROR] ERROR in {path.name}: {e}")
-        raise
+def run_file(path: Path) -> None:
+    """Execute a python script or notebook."""
+    if path.suffix == ".py":
+        print(f"\nRunning script: {path.name}")
+        try:
+            # Set PYTHONPATH to include project root so scripts can find config_local
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(PROJECT_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+            
+            # Use same python executable as current one
+            result = subprocess.run([sys.executable, str(path)], check=True, capture_output=True, text=True, env=env)
+            print(result.stdout)
+            print(f"Finished: {path.name}")
+        except subprocess.CalledProcessError as e:
+            print(f"ERROR in {path.name}")
+            print(e.stdout)
+            print(e.stderr)
+            raise
+    elif path.suffix == ".ipynb":
+        print(f"\nRunning notebook: {path.name}")
+        try:
+            pm.execute_notebook(
+                input_path=str(path),
+                output_path=str(path),  # overwrite in-place
+                log_output=False,
+                progress_bar=False
+            )
+            print(f"Finished: {path.name}")
+        except Exception as e:
+            print(f"ERROR in {path.name}: {e}")
+            raise
 
 
 def main() -> None:
     """Main entry point for preprocessing pipeline."""
     clean_interim()
 
-    # Auto-detect numbered notebooks
-    files = sorted(
-        f for f in PREPROC_DIR.glob(f"*{EXT}")
-        if f.name[0].isdigit()
-    )
+    # Auto-detect numbered py files or notebooks
+    py_files = set(f for f in PREPROC_DIR.glob(f"*{EXT_PY}") if f.name[0].isdigit())
+    ipynb_files = set(f for f in PREPROC_DIR.glob(f"*{EXT_IPYNB}") if f.name[0].isdigit())
+    
+    # Prioritize .py if both exist for same number
+    files_to_run = []
+    seen_numbers = set()
+    
+    # Sort all files by name to ensure order 1, 2, 3...
+    all_files = sorted(list(py_files | ipynb_files), key=lambda x: x.name)
+    
+    for f in all_files:
+        num = f.name[0]
+        if num not in seen_numbers:
+            # Look for .py version first
+            py_ver = PREPROC_DIR / (f.stem + EXT_PY)
+            if py_ver.exists():
+                files_to_run.append(py_ver)
+            else:
+                files_to_run.append(f)
+            seen_numbers.add(num)
 
-    if not files:
-        print("WARNING: No numbered notebooks found!")
+    if not files_to_run:
+        print("WARNING: No numbered preprocessing files found!")
         return
 
-    print("\nFiles detected:")
-    for f in files:
+    print("\nFiles detected to run:")
+    for f in files_to_run:
         print(f"  - {f.name}")
 
     print("\n" + "=" * 50)
     print("STARTING PREPROCESSING PIPELINE")
     print("=" * 50)
 
-    for f in files:
-        run_notebook(f)
+    for f in files_to_run:
+        run_file(f)
 
     print("\n" + "=" * 50)
-    print("[OK] ALL FILES COMPLETED")
+    print("ALL FILES COMPLETED")
     print("=" * 50)
 
 

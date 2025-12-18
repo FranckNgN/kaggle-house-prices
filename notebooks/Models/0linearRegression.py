@@ -7,12 +7,12 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
+from utils.data import load_sample_submission
 
 
 if __name__ == "__main__":
     train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
-    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
 
     print(f"Train shape: {train.shape}  |  Test shape: {test.shape}")
 
@@ -45,10 +45,8 @@ if __name__ == "__main__":
     pred_test_log = model.predict(X_test)
     pred_test_real = np.expm1(pred_test_log)
 
-    submission = pd.DataFrame({
-        "Id": testRaw.index,
-        "SalePrice": pred_test_real
-    })
+    submission = load_sample_submission()
+    submission["SalePrice"] = pred_test_real
 
     os.makedirs(local_config.SUBMISSIONS_DIR, exist_ok=True)
     out_path = os.path.join(local_config.SUBMISSIONS_DIR, "naive_lr.csv")

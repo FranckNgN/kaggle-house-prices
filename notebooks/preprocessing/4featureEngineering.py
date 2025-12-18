@@ -6,33 +6,12 @@ from sklearn.preprocessing import StandardScaler
 import config_local.local_config as local_config
 
 
-def add_age_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate age-related features based on the year sold."""
-    df["Age"] = df["YrSold"] - df["YearBuilt"]
-    df["Garage_Age"] = df["YrSold"] - df["GarageYrBlt"]
-    df["RemodAge"] = df["YrSold"] - df["YearRemodAdd"]
-    return df
+from typing import Tuple, Dict
 
 
 def add_era_features(df: pd.DataFrame) -> pd.DataFrame:
     """Group years into decades to capture architectural eras."""
     df["Decade"] = (df["YearBuilt"] // 10) * 10
-    return df
-
-
-def add_aggregate_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Create aggregated surface area and bathroom counts."""
-    # Total Surface Area
-    df["TotalSF"] = df["TotalBsmtSF"] + df["1stFlrSF"] + df["2ndFlrSF"]
-    
-    # Total Bathrooms
-    df["TotalBath"] = (df["FullBath"] + (0.5 * df["HalfBath"]) + 
-                       df["BsmtFullBath"] + (0.5 * df["BsmtHalfBath"]))
-    
-    # Total Porch Area
-    df["TotalPorchSF"] = (df["OpenPorchSF"] + df["3SsnPorch"] + 
-                          df["EnclosedPorch"] + df["ScreenPorch"] + 
-                          df["WoodDeckSF"])
     return df
 
 
@@ -46,10 +25,16 @@ def add_luxury_flags(df: pd.DataFrame) -> pd.DataFrame:
         "HasFireplace": "Fireplaces"
     }
     for flag, col in features.items():
-        df[flag] = df[col].apply(lambda x: 1 if x > 0 else 0)
+        if col in df.columns:
+            df[flag] = df[col].apply(lambda x: 1 if x > 0 else 0)
+        else:
+            df[flag] = 0
     
     # 1. Noise Reduction: Simplify conditions
-    df["IsNormalCondition"] = df["Condition1"].apply(lambda x: 1 if x == "Norm" else 0)
+    if "Condition1" in df.columns:
+        df["IsNormalCondition"] = df["Condition1"].apply(lambda x: 1 if x == "Norm" else 0)
+    else:
+        df["IsNormalCondition"] = 1
     
     return df
 
@@ -62,6 +47,8 @@ def add_ordinal_encoding(df: pd.DataFrame) -> pd.DataFrame:
     for col in qual_cols:
         if col in df.columns:
             df[f"{col}_Score"] = df[col].map(qual_map).fillna(0).astype("int8")
+        else:
+            df[f"{col}_Score"] = 0
             
     return df
 
@@ -73,7 +60,10 @@ def add_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
     df["Qual_x_TotalSF"] = df["OverallQual"] * df["TotalSF"]
     
     # Heart of the Home: Kitchen quality impact on total size value
-    df["Kitchen_x_TotalSF"] = df["KitchenQual_Score"] * df["TotalSF"]
+    if "KitchenQual_Score" in df.columns:
+        df["Kitchen_x_TotalSF"] = df["KitchenQual_Score"] * df["TotalSF"]
+    else:
+        df["Kitchen_x_TotalSF"] = 3 * df["TotalSF"] # Default to TA
     
     # Maintenance impact on Age
     df["Cond_x_Age"] = df["OverallCond"] * df["Age"]
@@ -81,14 +71,7 @@ def add_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def handle_skew_correction(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply log normalization to newly created area features."""
-    for col in ["TotalSF", "TotalPorchSF"]:
-        df[col] = np.log1p(df[col])
-    return df
-
-
-def add_group_benchmarks(train: pd.DataFrame, test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def add_group_benchmarks(train: pd.DataFrame, test: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculate relative performance features based on Neighborhood, SubClass, Zoning, Quality, and Era."""
     # Define benchmarks: (Group_Col, target_col, aggregation_type)
     benchmarks = [
@@ -102,14 +85,24 @@ def add_group_benchmarks(train: pd.DataFrame, test: pd.DataFrame) -> tuple[pd.Da
     ]
 
     for group_col, target_col, agg_type in benchmarks:
+        if group_col not in train.columns or target_col not in train.columns:
+            continue
+            
         # 1. Compute benchmark using ONLY training data to prevent leakage
         stats_map = train.groupby(group_col)[target_col].agg(agg_type)
         global_fallback = train[target_col].agg(agg_type)
+        
+        # Ensure fallback is not zero to avoid division by zero
+        if global_fallback == 0:
+            global_fallback = 1.0
 
         for df in [train, test]:
             # 2. Map benchmarks back to data
             benchmark_col = f"Temp_{group_col}_{target_col}_Benchmark"
             df[benchmark_col] = df[group_col].map(stats_map).fillna(global_fallback)
+            
+            # Ensure benchmark is not zero
+            df[benchmark_col] = df[benchmark_col].replace(0, global_fallback)
 
             # 3. Create relative features
             feature_name = f"{target_col}_to_{group_col}_Ratio"
@@ -117,6 +110,8 @@ def add_group_benchmarks(train: pd.DataFrame, test: pd.DataFrame) -> tuple[pd.Da
                 df[f"Age_vs_{group_col}_Avg"] = df[target_col] - df[benchmark_col]
             else:
                 df[feature_name] = df[target_col] / df[benchmark_col]
+                # Fill any remaining NaNs/Infs
+                df[feature_name] = df[feature_name].fillna(1.0).replace([np.inf, -np.inf], 1.0)
 
             # 4. Cleanup
             df.drop(columns=[benchmark_col], inplace=True)
@@ -130,7 +125,7 @@ def add_kmeans_clusters(
     k: int = 4, 
     cols: tuple = ("GrLivArea", "TotalBsmtSF", "1stFlrSF", "GarageCars", "YearBuilt", "OverallQual"), 
     seed: int = 42
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Perform K-Means clustering on both datasets to capture non-linear patterns."""
     cols = [c for c in cols if c in train.columns and c in test.columns]
     X = pd.concat([train[cols], test[cols]]).to_numpy()
@@ -146,32 +141,37 @@ def add_kmeans_clusters(
 
 def main() -> None:
     """Main execution entry point."""
-    print("📋 Loading Processed 3 data...")
+    print("Loading Processed 3 data...")
     train = pd.read_csv(local_config.TRAIN_PROCESS3_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS3_CSV)
 
-    print("🛠️  Applying basic feature engineering...")
-    for df in (train, test):
-        df = add_age_features(df)
-        df = add_era_features(df)
-        df = add_aggregate_features(df)
-        df = add_luxury_flags(df)
-        df = add_ordinal_encoding(df)
-        df = add_interaction_features(df)
-        df = handle_skew_correction(df)
+    print(f"Initial NaNs in train: {train.isna().sum().sum()}")
 
-    print("📍 Adding group-based relative benchmarks...")
+    print("Applying basic feature engineering...")
+    # Process train
+    train = add_era_features(train)
+    train = add_luxury_flags(train)
+    train = add_ordinal_encoding(train)
+    train = add_interaction_features(train)
+    
+    # Process test
+    test = add_era_features(test)
+    test = add_luxury_flags(test)
+    test = add_ordinal_encoding(test)
+    test = add_interaction_features(test)
+
+    print("Adding group-based relative benchmarks...")
     train, test = add_group_benchmarks(train, test)
 
-    print("🤖 Running K-Means clustering...")
+    print("Running K-Means clustering...")
     train, test = add_kmeans_clusters(train, test)
 
-    print("💾 Saving Processed 4 data...")
+    print("Saving Processed 4 data...")
     Path(local_config.TRAIN_PROCESS4_CSV).parent.mkdir(parents=True, exist_ok=True)
     train.to_csv(local_config.TRAIN_PROCESS4_CSV, index=False)
     test.to_csv(local_config.TEST_PROCESS4_CSV, index=False)
     
-    print("✨ Feature Engineering complete!")
+    print("Feature Engineering complete!")
 
 
 if __name__ == "__main__":

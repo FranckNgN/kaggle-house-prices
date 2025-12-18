@@ -9,12 +9,12 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
 from config_local import model_config
+from utils.data import load_sample_submission
 
 
 if __name__ == "__main__":
     train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
-    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
 
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
@@ -35,8 +35,12 @@ if __name__ == "__main__":
         model.fit(X_train, y_train)
 
         y_val_pred_log = model.predict(X_val)
-        y_val_pred = np.exp(y_val_pred_log)
-        y_val_real = np.exp(y_val)
+        
+        # Clip log predictions to avoid overflow in exp
+        y_val_pred_log = np.clip(y_val_pred_log, 0, 15) 
+        
+        y_val_pred = np.expm1(y_val_pred_log)
+        y_val_real = np.expm1(y_val)
 
         mse = mean_squared_error(y_val_real, y_val_pred)
         rmse = np.sqrt(mse)
@@ -52,12 +56,11 @@ if __name__ == "__main__":
     final_model.fit(X, y)
 
     test_pred_log = final_model.predict(test)
+    test_pred_log = np.clip(test_pred_log, 0, 15)
     test_pred = np.expm1(test_pred_log)
 
-    submission = pd.DataFrame({
-        "Id": testRaw.index,
-        "SalePrice": test_pred
-    })
+    submission = load_sample_submission()
+    submission["SalePrice"] = test_pred
 
     out_path = os.path.join(local_config.SUBMISSIONS_DIR, "linearModel_KFold.csv")
     submission.to_csv(out_path, index=False)

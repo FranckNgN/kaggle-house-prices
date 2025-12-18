@@ -4,32 +4,34 @@
 import os
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error
-from catboost import CatBoostRegressor
+from sklearn.ensemble import RandomForestRegressor
 from config_local import local_config
 from config_local import model_config
 from utils.optimization import run_optuna_study
+from utils.data import load_sample_submission
 
 
 if __name__ == "__main__":
     train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
-    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
 
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
 
-    cfg = model_config.CATBOOST
+    cfg = model_config.RANDOM_FOREST
+    opt_cfg = cfg["optuna_settings"]
     
     # Use Optuna for hyperparameter optimization
-    print("Running Optuna optimization for CatBoost...")
+    print("Running Optuna optimization for Random Forest...")
     best_params = run_optuna_study(
         X.values, 
         y.values, 
-        model_type="catboost",
+        model_type="random_forest",
         base_params=cfg["base_params"],
         optuna_space=cfg["optuna_space"],
-        n_trials=30  # CatBoost is slow, fewer trials
+        n_trials=opt_cfg["n_trials"],
+        n_splits=opt_cfg["n_splits"],
+        random_state=opt_cfg["random_state"]
     )
 
     # Train final model with best params
@@ -37,18 +39,17 @@ if __name__ == "__main__":
     final_params = cfg["base_params"].copy()
     final_params.update(best_params)
     
-    best_model = CatBoostRegressor(**final_params)
+    best_model = RandomForestRegressor(**final_params)
     best_model.fit(X.values, y.values)
 
     # Predict on Kaggle test set
     test_pred_log = best_model.predict(test.values)
     test_pred_real = np.expm1(test_pred_log)
 
-    submission = pd.DataFrame({
-        "Id": testRaw.index,
-        "SalePrice": test_pred_real
-    })
+    submission = load_sample_submission()
+    submission["SalePrice"] = test_pred_real
 
-    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "catboost_Model.csv")
+    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "randomForest_Model.csv")
     submission.to_csv(out_path, index=False)
     print(f"Submission saved: {out_path}")
+

@@ -31,6 +31,30 @@ if __name__ == "__main__":
     outlier_mask = (train['GrLivArea'] > 4000) & (train['SalePrice'] < 300000)
     train = train.loc[~outlier_mask]
 
+    # --- Feature Creation (Pre-Skewness) ---
+    def add_basic_features(df: pd.DataFrame) -> pd.DataFrame:
+        # Age Features
+        df["Age"] = df["YrSold"] - df["YearBuilt"]
+        df["Garage_Age"] = df["YrSold"] - df["GarageYrBlt"]
+        df["RemodAge"] = df["YrSold"] - df["YearRemodAdd"]
+        
+        # Aggregate Surface Area
+        df["TotalSF"] = df["TotalBsmtSF"].fillna(0) + df["1stFlrSF"].fillna(0) + df["2ndFlrSF"].fillna(0)
+        
+        # Total Bathrooms
+        df["TotalBath"] = (df["FullBath"].fillna(0) + (0.5 * df["HalfBath"].fillna(0)) + 
+                           df["BsmtFullBath"].fillna(0) + (0.5 * df["BsmtHalfBath"].fillna(0)))
+        
+        # Total Porch Area
+        df["TotalPorchSF"] = (df["OpenPorchSF"].fillna(0) + df["3SsnPorch"].fillna(0) + 
+                              df["EnclosedPorch"].fillna(0) + df["ScreenPorch"].fillna(0) + 
+                              df["WoodDeckSF"].fillna(0))
+        return df
+
+    train = add_basic_features(train)
+    test = add_basic_features(test)
+    # --------------------------------------
+
     train["logSP"] = salePrice_df['logSP']
 
     if "SalePrice" in train.columns:

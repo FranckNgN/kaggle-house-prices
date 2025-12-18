@@ -9,12 +9,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
 from config_local import model_config
+from utils.data import load_sample_submission
 
 
 if __name__ == "__main__":
     train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
-    testRaw = pd.read_csv(local_config.TEST_CSV, index_col="Id")
 
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 best_l1_ratio = l1
 
     print("\n===============================")
-    print(f"Best ElasticNet → alpha={best_alpha}, l1_ratio={best_l1_ratio}, RMSE={best_rmse:.2f}")
+    print(f"Best ElasticNet -> alpha={best_alpha}, l1_ratio={best_l1_ratio}, RMSE={best_rmse:.2f}")
     print("===============================\n")
 
     best_model = ElasticNet(alpha=best_alpha, l1_ratio=best_l1_ratio, max_iter=max_iter)
@@ -65,10 +65,8 @@ if __name__ == "__main__":
     test_pred_log = best_model.predict(test)
     test_pred_real = np.expm1(test_pred_log)
 
-    submission = pd.DataFrame({
-        "Id": testRaw.index,
-        "SalePrice": test_pred_real
-    })
+    submission = load_sample_submission()
+    submission["SalePrice"] = test_pred_real
 
     out_path = os.path.join(local_config.SUBMISSIONS_DIR, "elasticNetModel.csv")
     submission.to_csv(out_path, index=False)

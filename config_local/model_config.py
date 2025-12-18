@@ -96,6 +96,12 @@ XGBOOST = {
         "verbose": 2,
         "random_state": 42,
     },
+    # Optuna search settings
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
     # Optuna search space
     "optuna_space": {
         "n_estimators": (500, 2000),
@@ -138,6 +144,12 @@ LIGHTGBM = {
         "verbose": 2,
         "random_state": 42,
     },
+    # Optuna search settings
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
     # Optuna search space
     "optuna_space": {
         "n_estimators": (500, 2000),
@@ -172,6 +184,12 @@ CATBOOST = {
     "search_space": {
         "l2_leaf_reg": [3.0, 5.0],
     },
+    # Optuna search settings
+    "optuna_settings": {
+        "n_trials": 30,
+        "n_splits": 5,
+        "random_state": 42,
+    },
     # Optuna search space
     "optuna_space": {
         "iterations": (1000, 3000),
@@ -196,6 +214,75 @@ CATBOOST = {
 }
 
 # ============================================================================
+# RANDOM FOREST
+# ============================================================================
+RANDOM_FOREST = {
+    "base_params": {
+        "random_state": 42,
+        "n_jobs": -1,
+        "criterion": "squared_error",
+    },
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
+    "optuna_space": {
+        "n_estimators": (100, 1000),
+        "max_depth": (3, 20),
+        "min_samples_split": (2, 20),
+        "min_samples_leaf": (1, 10),
+        "max_features": (0.1, 1.0),
+    },
+}
+
+# ============================================================================
+# SUPPORT VECTOR REGRESSION (SVR)
+# ============================================================================
+SVR = {
+    "base_params": {
+        "kernel": "rbf",
+    },
+    "optuna_settings": {
+        "n_trials": 50,
+        "n_splits": 5,
+        "random_state": 42,
+    },
+    "optuna_space": {
+        "C": (0.1, 100.0, "log"),
+        "epsilon": (0.001, 1.0, "log"),
+        "gamma": (0.0001, 1.0, "log"),
+    },
+}
+
+# ============================================================================
+# STACKING MODEL
+# ============================================================================
+STACKING = {
+    # Base models to use for stacking (must match names in configs)
+    "base_models": [
+        "xgboost", 
+        "lightgbm", 
+        "catboost", 
+        "ridge", 
+        "lasso", 
+        "elastic_net",
+        "random_forest",
+        "svr"
+    ],
+    # Meta-model to combine predictions
+    "meta_model": "lasso", 
+    "meta_model_params": {
+        "alpha": 0.0005,
+        "random_state": 42,
+    },
+    "cv_n_splits": 5,
+    "cv_shuffle": True,
+    "cv_random_state": 42,
+    "output_filename": "stacking_submission.csv"
+}
+
+# ============================================================================
 # BLENDING MODEL
 # ============================================================================
 BLENDING = {
@@ -207,6 +294,8 @@ BLENDING = {
         "ridge": "ridgeModel.csv",
         "lasso": "lassoModel.csv",
         "elasticNet": "elasticNetModel.csv",
+        "rf": "randomForest_Model.csv",
+        "svr": "svr_Model.csv",
     },
     # Weights for the weighted average blend
     # Note: Only models listed here AND in "models" will be used.
@@ -218,6 +307,8 @@ BLENDING = {
         "ridge": 0.0,
         "lasso": 0.0,
         "elasticNet": 0.0,
+        "rf": 0.0,
+        "svr": 0.0,
     },
     "output_filename": "blend_xgb_lgb_cat_Model.csv"
 }
@@ -247,6 +338,9 @@ def get_model_config(model_name: str) -> dict:
         "xgboost": XGBOOST,
         "lightgbm": LIGHTGBM,
         "catboost": CATBOOST,
+        "random_forest": RANDOM_FOREST,
+        "svr": SVR,
+        "stacking": STACKING,
         "blending": BLENDING,
     }
     
@@ -272,6 +366,9 @@ def print_all_configs():
         "XGBOOST": XGBOOST,
         "LIGHTGBM": LIGHTGBM,
         "CATBOOST": CATBOOST,
+        "RANDOM_FOREST": RANDOM_FOREST,
+        "SVR": SVR,
+        "STACKING": STACKING,
         "BLENDING": BLENDING,
     }
     

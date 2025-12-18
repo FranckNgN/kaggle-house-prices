@@ -36,6 +36,19 @@ def load_data(stage: int, train: bool = True) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+def load_sample_submission() -> pd.DataFrame:
+    """
+    Load the sample submission file to use as a template for new submissions.
+    
+    Returns:
+        DataFrame with 'Id' and 'SalePrice' columns from sample_submission.csv
+    """
+    if cfg is None:
+        raise ImportError("config_local not available")
+    
+    return pd.read_csv(cfg.SAMPLE_SUBMISSION_CSV)
+
+
 def save_data(df: pd.DataFrame, stage: int, train: bool = True) -> None:
     """
     Save processed data at specified stage.

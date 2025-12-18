@@ -6,6 +6,8 @@ from sklearn.model_selection import KFold, cross_val_score
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
 from typing import Dict, Any, Callable
 
 
@@ -58,6 +60,10 @@ def run_optuna_study(
         elif model_type == "catboost":
             # For CatBoost, we might need special handling for GPU/CPU
             model = CatBoostRegressor(**params)
+        elif model_type == "random_forest":
+            model = RandomForestRegressor(**params)
+        elif model_type == "svr":
+            model = SVR(**params)
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
             
