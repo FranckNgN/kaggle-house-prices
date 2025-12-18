@@ -51,7 +51,21 @@ Kaggle competition project predicting house sale prices using a structured prepr
   - `TotalSF`: Sum of basement, 1st, and 2nd floor area (log-normalized).
   - `TotalBath`: Sum of all full and half baths.
   - `TotalPorchSF`: Combined area of all decks and porches (log-normalized).
-- **Binary Flags**: `HasPool`, `Has2ndFlr`, `HasGarage`, `HasBsmt`, `HasFireplace`.
+- **Group Benchmarks (Contextual Features)**:
+  - `TotalSF_to_Neighborhood_Ratio`: Relative size compared to neighbors.
+  - `OverallQual_to_Neighborhood_Ratio`: Relative quality compared to neighbors.
+  - `Age_vs_Neighborhood_Avg`: Relative age compared to neighbors.
+  - `TotalSF_to_MSSubClass_Ratio`: Is the house large for its architectural style?
+  - `LotArea_to_MSZoning_Ratio`: Land premium within its specific zone.
+  - `TotalSF_to_OverallQual_Ratio`: Is the house size typical for its quality level?
+  - `TotalSF_to_Decade_Ratio`: Is the house size typical for its era?
+- **Ordinal Scores (Rating Normalization)**:
+  - Converted `ExterQual`, `KitchenQual`, `BsmtQual`, etc., into numeric scores (0-5).
+- **Interaction Features (Multiplier Effect)**:
+  - `Qual_x_TotalSF`: Captures the exponential value of high-quality large homes.
+  - `Kitchen_x_TotalSF`: Interaction between kitchen quality and house size.
+  - `Cond_x_Age`: Captures the value of well-maintained older homes.
+- **Binary Flags**: `HasPool`, `Has2ndFlr`, `HasGarage`, `HasBsmt`, `HasFireplace`, `IsNormalCondition`.
 - **K-Means Clustering**:
   - Features: `GrLivArea`, `TotalBsmtSF`, `1stFlrSF`, `GarageCars`, `YearBuilt`, `OverallQual`
   - Clusters: `k=4`, standardized features before clustering
