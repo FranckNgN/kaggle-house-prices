@@ -47,6 +47,11 @@ Kaggle competition project predicting house sale prices using a structured prepr
   - `Age = YrSold - YearBuilt`
   - `Garage_Age = YrSold - GarageYrBlt`
   - `RemodAge = YrSold - YearRemodAdd`
+- **Aggregate Features (Magic Features)**:
+  - `TotalSF`: Sum of basement, 1st, and 2nd floor area (log-normalized).
+  - `TotalBath`: Sum of all full and half baths.
+  - `TotalPorchSF`: Combined area of all decks and porches (log-normalized).
+- **Binary Flags**: `HasPool`, `Has2ndFlr`, `HasGarage`, `HasBsmt`, `HasFireplace`.
 - **K-Means Clustering**:
   - Features: `GrLivArea`, `TotalBsmtSF`, `1stFlrSF`, `GarageCars`, `YearBuilt`, `OverallQual`
   - Clusters: `k=4`, standardized features before clustering
