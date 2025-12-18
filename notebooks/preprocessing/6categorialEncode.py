@@ -3,6 +3,7 @@
 
 import pandas as pd
 from pathlib import Path
+from sklearn.preprocessing import StandardScaler
 import config_local.local_config as local_config
 
 
@@ -17,10 +18,13 @@ if __name__ == "__main__":
     all_X = pd.concat([X_train, X_test], axis=0, ignore_index=True)
     all_X_enc = pd.get_dummies(all_X, drop_first=True, dtype="int8")
 
+    # DO NOT scale binary dummies. They are already on a 0-1 scale which is ideal.
+    # The continuous features were already scaled in stage 5.
+    
     X_train_enc = all_X_enc.iloc[:len(X_train), :].copy()
     X_test_enc = all_X_enc.iloc[len(X_train):, :].copy()
 
-    train_enc = pd.concat([y.reset_index(drop=True), X_train_enc], axis=1)
+    train_enc = pd.concat([y.reset_index(drop=True), X_train_enc.reset_index(drop=True)], axis=1)
 
     Path(local_config.TRAIN_PROCESS6_CSV).parent.mkdir(parents=True, exist_ok=True)
     Path(local_config.TEST_PROCESS6_CSV).parent.mkdir(parents=True, exist_ok=True)

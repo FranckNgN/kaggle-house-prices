@@ -5,6 +5,12 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+
+# Monkey-patch numpy.warnings for compatibility with older scikit-learn and numpy 2.0+
+if not hasattr(np, "warnings"):
+    import warnings
+    np.warnings = warnings
+
 from pathlib import Path
 from scipy import stats
 from sklearn.preprocessing import PowerTransformer, QuantileTransformer
@@ -23,10 +29,34 @@ if __name__ == "__main__":
         "logSP": lambda x: np.log1p(x).ravel(),
         "SquareRootSP": lambda x: np.sqrt(x).ravel(),
         "BoxCoxSP": lambda x: boxcox(x.ravel())[0],
-        "YeoJohnsonSP": lambda x: PowerTransformer(method="yeo-johnson").fit_transform(x).ravel(),
-        "QuantileSP": lambda x: QuantileTransformer(output_distribution="normal", random_state=0).fit_transform(x).ravel()
+        # Yeo-Johnson can fail due to numpy/sklearn version conflicts in some envs
+        # "YeoJohnsonSP": lambda x: PowerTransformer(method="yeo-johnson").fit_transform(x).ravel(),
+        # "QuantileSP": lambda x: QuantileTransformer(output_distribution="normal", random_state=0).fit_transform(x).ravel()
     }
-    salePrice_df = pd.DataFrame({name: func(salePriceReshape) for name, func in transforms.items()})
+    
+    # Try to add Yeo-Johnson and Quantile if they don't crash
+    try:
+        salePrice_df = pd.DataFrame({name: func(salePriceReshape) for name, func in transforms.items()})
+        # Try individual ones separately
+        try:
+            salePrice_df["YeoJohnsonSP"] = PowerTransformer(method="yeo-johnson").fit_transform(salePriceReshape).ravel()
+        except Exception:
+            print("Warning: YeoJohnsonSP failed")
+        
+        try:
+            salePrice_df["QuantileSP"] = QuantileTransformer(output_distribution="normal", random_state=0).fit_transform(salePriceReshape).ravel()
+        except Exception:
+            print("Warning: QuantileSP failed")
+            
+    except Exception as e:
+        print(f"Warning: Basic transforms failed: {e}")
+        # Fallback to absolute minimum
+        salePrice_df = pd.DataFrame({
+            "SalePrice": salePriceReshape.ravel(),
+            "logSP": np.log1p(salePriceReshape).ravel()
+        })
+
+
 
     outlier_mask = (train['GrLivArea'] > 4000) & (train['SalePrice'] < 300000)
     train = train.loc[~outlier_mask]

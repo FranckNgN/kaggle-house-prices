@@ -40,15 +40,15 @@ def add_luxury_flags(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_ordinal_encoding(df: pd.DataFrame) -> pd.DataFrame:
-    """Convert qualitative ratings into ordered numerical values."""
+    """Convert qualitative ratings into ordered numerical values and drop original columns."""
     qual_map = {"Ex": 5, "Gd": 4, "TA": 3, "Fa": 2, "Po": 1, "<None>": 0}
     qual_cols = ["ExterQual", "ExterCond", "BsmtQual", "BsmtCond", "HeatingQC", "KitchenQual", "FireplaceQu", "GarageQual", "GarageCond"]
     
     for col in qual_cols:
         if col in df.columns:
             df[f"{col}_Score"] = df[col].map(qual_map).fillna(0).astype("int8")
-        else:
-            df[f"{col}_Score"] = 0
+            # Drop original categorical column to avoid redundant OHE later
+            df.drop(columns=[col], inplace=True)
             
     return df
 
@@ -134,8 +134,8 @@ def add_kmeans_clusters(
     scaler = StandardScaler()
     labels = KMeans(k, n_init=20, random_state=seed).fit_predict(scaler.fit_transform(X))
     
-    train["KMeansCluster"] = labels[:len(train)].astype("int16")
-    test["KMeansCluster"] = labels[len(train):].astype("int16")
+    train["KMeansCluster"] = [f"Cluster_{l}" for l in labels[:len(train)]]
+    test["KMeansCluster"] = [f"Cluster_{l}" for l in labels[len(train):]]
     return train, test
 
 

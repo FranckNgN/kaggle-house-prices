@@ -94,7 +94,7 @@ RANDOM_FOREST = {
     "base_params": {
         "random_state": 42,
         "n_jobs": -1,
-        "criterion": "squared_error",
+        "criterion": "mse",
     },
     "optuna_settings": {
         "n_trials": 50,
@@ -340,7 +340,6 @@ STACKING = {
     "cv_n_splits": 5,
     "cv_shuffle": True,
     "cv_random_state": 42,
-}
 }
 
 # ============================================================================

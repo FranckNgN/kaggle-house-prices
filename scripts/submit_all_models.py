@@ -29,6 +29,9 @@ def get_available_submissions() -> List[Dict]:
     
     submissions = []
     for csv_file in sorted(csv_files):
+        # Resolve csv_file to absolute path to match PROJECT_ROOT
+        csv_file_abs = csv_file.resolve()
+        
         # Generate model name from filename or parent folder
         if csv_file.parent != submissions_dir:
             model_name = csv_file.parent.name.replace("_", " ").title()
@@ -39,9 +42,9 @@ def get_available_submissions() -> List[Dict]:
             model_name = csv_file.stem
         
         submissions.append({
-            "file": str(csv_file),
+            "file": str(csv_file_abs),
             "name": csv_file.name,
-            "path": str(csv_file.relative_to(PROJECT_ROOT)),
+            "path": str(csv_file_abs.relative_to(PROJECT_ROOT)),
             "model": model_name
         })
     
@@ -51,7 +54,7 @@ def get_available_submissions() -> List[Dict]:
 def display_submissions(submissions: List[Dict]):
     """Display available submission files."""
     print("\n" + "=" * 70)
-    print("📋 AVAILABLE SUBMISSION FILES")
+    print("AVAILABLE SUBMISSION FILES")
     print("=" * 70)
     for i, sub in enumerate(submissions, 1):
         print(f"  {i:2d}. {sub['name']:30s} ({sub['model']})")
@@ -76,21 +79,21 @@ def submit_single_model(submissions: List[Dict]) -> Dict:
                 if not message:
                     message = f"{selected['model']} model"
                 
-                print(f"\n📤 Submitting: {selected['name']}")
+                print(f"\nSubmitting: {selected['name']}")
                 result = submit_and_check(selected['file'], message)
                 return result
             else:
-                print(f"❌ Invalid choice. Please enter a number between 1 and {len(submissions)}")
+                print(f"Invalid choice. Please enter a number between 1 and {len(submissions)}")
         except ValueError:
-            print("❌ Invalid input. Please enter a number or 'q' to quit.")
+            print("Invalid input. Please enter a number or 'q' to quit.")
         except KeyboardInterrupt:
-            print("\n\n⚠️  Cancelled by user.")
+            print("\n\nCancelled by user.")
             return None
 
 
 def submit_all_models(submissions: List[Dict]) -> List[Dict]:
     """Submit all models one by one."""
-    print(f"\n🚀 Submitting {len(submissions)} models to Kaggle...")
+    print(f"\nSubmitting {len(submissions)} models to Kaggle...")
     print("=" * 70)
     
     results = []
@@ -111,7 +114,7 @@ def submit_all_models(submissions: List[Dict]) -> List[Dict]:
         
         # Wait between submissions to avoid rate limiting
         if i < len(submissions):
-            print(f"\n⏳ Waiting 10 seconds before next submission...")
+            print(f"\nWaiting 10 seconds before next submission...")
             import time
             time.sleep(10)
     
@@ -124,7 +127,7 @@ def display_summary(results: List[Dict]):
         return
     
     print("\n" + "=" * 70)
-    print("📊 SUBMISSION SUMMARY")
+    print("SUBMISSION SUMMARY")
     print("=" * 70)
     print(f"{'Model':<30s} {'Rank':<10s} {'Score':<15s}")
     print("-" * 70)
@@ -136,7 +139,7 @@ def display_summary(results: List[Dict]):
         print(f"{r['model']:<30s} {r['rank']:<10d} {r['score']:<15.5f}")
     
     print("=" * 70)
-    print(f"\n🏆 Best Model: {sorted_results[0]['model']}")
+    print(f"\nBest Model: {sorted_results[0]['model']}")
     print(f"   Score: {sorted_results[0]['score']:.5f}")
     print(f"   Rank: {sorted_results[0]['rank']}")
 
@@ -144,21 +147,21 @@ def display_summary(results: List[Dict]):
 def main():
     """Main interactive menu."""
     print("=" * 70)
-    print("🚀 KAGGLE MODEL SUBMISSION MANAGER")
+    print("KAGGLE MODEL SUBMISSION MANAGER")
     print("=" * 70)
     
     # Get available submissions
     submissions = get_available_submissions()
     
     if not submissions:
-        print("❌ No submission files found in data/submissions/")
+        print("No submission files found in data/submissions/")
         print("   Make sure you have generated submission CSV files.")
         sys.exit(1)
     
     # Main menu loop
     while True:
         print("\n" + "=" * 70)
-        print("📋 MAIN MENU")
+        print("MAIN MENU")
         print("=" * 70)
         print("  1. Submit a single model")
         print("  2. Submit all models")
@@ -175,7 +178,7 @@ def main():
                 input("\nPress Enter to continue...")
         
         elif choice == '2':
-            confirm = input(f"\n⚠️  This will submit {len(submissions)} models. Continue? (y/n): ").strip().lower()
+            confirm = input(f"\nThis will submit {len(submissions)} models. Continue? (y/n): ").strip().lower()
             if confirm == 'y':
                 results = submit_all_models(submissions)
                 display_summary(results)
@@ -191,7 +194,7 @@ def main():
             log = load_submission_log()
             if log:
                 print("\n" + "=" * 70)
-                print("📜 SUBMISSION HISTORY")
+                print("SUBMISSION HISTORY")
                 print("=" * 70)
                 print(f"{'Timestamp':<20s} {'File':<30s} {'Rank':<10s} {'Score':<15s}")
                 print("-" * 70)
@@ -199,15 +202,15 @@ def main():
                     print(f"{entry['timestamp']:<20s} {entry['file']:<30s} {entry['rank']:<10d} {entry['score']:<15.5f}")
                 print("=" * 70)
             else:
-                print("\n📜 No submission history found.")
+                print("\nNo submission history found.")
             input("\nPress Enter to continue...")
         
         elif choice == '5':
-            print("\n👋 Goodbye!")
+            print("\nGoodbye!")
             break
         
         else:
-            print("❌ Invalid choice. Please select 1-5.")
+            print("Invalid choice. Please select 1-5.")
 
 
 if __name__ == "__main__":

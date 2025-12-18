@@ -13,8 +13,10 @@ from utils.data import load_sample_submission
 
 
 def rmse_real(y_true_log, y_pred_log):
-    y_true = np.exp(y_true_log)
-    y_pred = np.exp(y_pred_log)
+    y_true = np.expm1(y_true_log)
+    y_pred = np.expm1(y_pred_log)
+    # Clip to avoid extreme values
+    y_pred = np.clip(y_pred, 0, 1e7)
     mse = mean_squared_error(y_true, y_pred)
     return np.sqrt(mse)
 

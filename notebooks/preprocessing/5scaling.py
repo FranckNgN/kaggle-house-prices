@@ -23,12 +23,15 @@ if __name__ == "__main__":
     X_test = test.copy()
 
     train_numeric = X_train.select_dtypes(include='number')
-    train_numeric_cont = [col for col in train_numeric.columns if is_continuous(train_numeric[col])]
+    # Scale ONLY continuous numeric columns
+    # Binary flags and small-range ordinals are often better left unscaled or handled separately
+    cols_to_scale = [col for col in train_numeric.columns if is_continuous(X_train[col], 0.05)]
 
+    print(f"Scaling {len(cols_to_scale)} continuous columns...")
     scaler = StandardScaler()
 
     for col in X_train.columns:
-        if col in train_numeric_cont:
+        if col in cols_to_scale:
             X_train[col] = scaler.fit_transform(X_train[[col]])
             X_test[col] = scaler.transform(X_test[[col]])
 

@@ -4,6 +4,7 @@ import sys
 import io
 import subprocess
 import os
+import pandas as pd
 
 # Fix Windows console encoding for emoji characters
 if sys.platform == 'win32':
@@ -16,17 +17,52 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # Import config for paths
 try:
     import config_local.local_config as config
+    from utils.validation import validate_dataframe, validate_column_parity, check_skewness
 except ImportError:
-    print("ERROR: config_local.local_config not found. Please create it from local_config.py.example")
+    print("ERROR: Required modules not found.")
     sys.exit(1)
 
 # ---------------------------------------------------
-# PATHS
+# VALIDATE STAGE OUTPUTS
 # ---------------------------------------------------
+# PATHS
 ROOT = Path(__file__).resolve().parent                # .../notebooks/preprocessing
 PREPROC_DIR = ROOT                                    # where the numbered notebooks are
 EXT_PY = ".py"
 EXT_IPYNB = ".ipynb"
+
+def validate_stage(stage_num: int) -> None:
+    """Validate the output files of a specific preprocessing stage."""
+    print(f"\n--- Validating Stage {stage_num} ---")
+    
+    train_attr = f"TRAIN_PROCESS{stage_num}_CSV"
+    test_attr = f"TEST_PROCESS{stage_num}_CSV"
+    
+    if not hasattr(config, train_attr) or not hasattr(config, test_attr):
+        print(f"  ⚠️  Paths for stage {stage_num} not found in config. Skipping.")
+        return
+
+    train_path = getattr(config, train_attr)
+    test_path = getattr(config, test_attr)
+    
+    if not train_path.exists() or not test_path.exists():
+        print(f"  ⚠️  Output files for stage {stage_num} do not exist yet. Skipping.")
+        return
+
+    train_df = pd.read_csv(train_path)
+    test_df = pd.read_csv(test_path)
+    
+    # Check for NAs (Starting from stage 1, we expect no NAs except maybe the target in some stages)
+    validate_dataframe(train_df, f"Train Process {stage_num}")
+    validate_dataframe(test_df, f"Test Process {stage_num}")
+    
+    # Check for column parity
+    target_col = "logSP" if stage_num >= 2 else "SalePrice"
+    validate_column_parity(train_df, test_df, target_col=target_col)
+    
+    # Check skewness (particularly relevant for stage 3 onwards)
+    if stage_num >= 3:
+        check_skewness(train_df, f"Train Process {stage_num}")
 
 # ---------------------------------------------------
 # CLEAN INTERIM DIRECTORY
@@ -146,6 +182,9 @@ def main() -> None:
 
     for f in files_to_run:
         run_file(f)
+        # Extract stage number from filename (assuming name starts with digit)
+        stage_num = int(f.name[0])
+        validate_stage(stage_num)
 
     print("\n" + "=" * 50)
     print("ALL FILES COMPLETED")

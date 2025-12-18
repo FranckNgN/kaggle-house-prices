@@ -6,6 +6,7 @@ RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 INTERIM_TRAIN_DIR = INTERIM_DIR / "train"
 INTERIM_TEST_DIR = INTERIM_DIR / "test"
+OOF_DIR = INTERIM_DIR / "oof"
 PROCESSED_DIR = DATA_DIR / "processed"
 SUBMISSIONS_DIR = DATA_DIR / "submissions"
 

@@ -106,7 +106,7 @@ def main() -> None:
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     blend.to_csv(out_path, index=False)
     
-    print(f"--- Blended predictions saved to: {output_path} ---")
+    print(f"--- Blended predictions saved to: {out_path} ---")
     print(f"Prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")
 
 

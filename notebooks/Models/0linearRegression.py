@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
+from config_local import model_config
 from utils.data import load_sample_submission
 
 
@@ -27,7 +28,8 @@ if __name__ == "__main__":
     assert not X_test.isna().any().any(), "Test data has missing values"
     print("Data validation passed - no missing values")
 
-    model = LinearRegression()
+    from sklearn.linear_model import Ridge
+    model = Ridge(alpha=100.0)
     model.fit(X, y)
 
     pred_train_log = model.predict(X)

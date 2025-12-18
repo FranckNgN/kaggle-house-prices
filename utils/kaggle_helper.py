@@ -49,39 +49,54 @@ def check_leaderboard(api: Optional[KaggleApi] = None) -> Optional[Dict]:
             api.authenticate()
         
         username = get_username()
-        print(f"📊 Fetching leaderboard for '{COMPETITION_NAME}'...")
+        print(f"Fetching leaderboard for '{COMPETITION_NAME}'...")
         print(f"   Looking for: {username}")
         
-        # Get leaderboard
-        leaderboard = api.competition_view_leaderboard(COMPETITION_NAME)
+        # Try to get the team name from submissions first, as it might differ from username
+        team_names = {username.lower()}
+        try:
+            subs = api.competition_submissions(COMPETITION_NAME)
+            if subs:
+                latest_team = getattr(subs[0], 'teamName', None)
+                if latest_team:
+                    team_names.add(latest_team.lower())
+                total_submissions = len(subs)
+            else:
+                total_submissions = 0
+        except:
+            total_submissions = "unknown"
+        
+        # Use competition_leaderboard_view which returns a list of LeaderboardEntry objects
+        leaderboard = api.competition_leaderboard_view(COMPETITION_NAME)
         
         # Find user's entry
         user_entry = None
-        for entry in leaderboard:
-            if entry.username.lower() == username.lower():
+        for i, entry in enumerate(leaderboard):
+            team_name = getattr(entry, 'teamName', '')
+            if team_name.lower() in team_names:
                 user_entry = {
-                    "rank": entry.rank,
-                    "score": float(entry.score),
-                    "username": entry.username,
-                    "submission_date": str(entry.submissionDate),
-                    "total_submissions": entry.totalSubmissions
+                    "rank": i + 1,
+                    "score": float(entry.score) if hasattr(entry, 'score') and entry.score else 0.0,
+                    "username": team_name,
+                    "submission_date": str(getattr(entry, 'submissionDate', 'unknown')),
+                    "total_submissions": total_submissions
                 }
                 break
         
         if user_entry:
-            print(f"\n✅ Found your submission!")
+            print(f"\nFound your submission!")
             return user_entry
         else:
-            print(f"\n⚠️  No submission found for username: {username}")
+            print(f"\nNo submission found for team names: {team_names}")
             if leaderboard:
-                print("\n📋 Top 5 Leaderboard:")
+                print("\nLeaderboard Top 5:")
                 print("-" * 60)
-                for entry in leaderboard[:5]:
-                    print(f"  {entry.rank:4d}. {entry.username:20s} - Score: {entry.score}")
+                for i, entry in enumerate(leaderboard[:5]):
+                    print(f"  {i+1:4d}. {getattr(entry, 'teamName', 'unknown'):20s} - Score: {getattr(entry, 'score', 'unknown')}")
             return None
             
     except Exception as e:
-        print(f"❌ Error checking leaderboard: {e}")
+        print(f"Error checking leaderboard: {e}")
         return None
 
 
@@ -106,15 +121,15 @@ def submit_and_check(
     submission_path = Path(submission_file)
     
     if not submission_path.exists():
-        print(f"❌ File not found: {submission_file}")
+        print(f"File not found: {submission_file}")
         return None
     
     print("=" * 70)
-    print("🚀 KAGGLE SUBMISSION")
+    print("KAGGLE SUBMISSION")
     print("=" * 70)
-    print(f"📤 File: {submission_path.name}")
-    print(f"💬 Message: {message}")
-    print(f"📁 Path: {submission_path}")
+    print(f"File: {submission_path.name}")
+    print(f"Message: {message}")
+    print(f"Path: {submission_path}")
     print("-" * 70)
     
     try:
@@ -123,19 +138,19 @@ def submit_and_check(
         api.authenticate()
         
         # Submit
-        print("⏳ Submitting to Kaggle...")
+        print("Submitting to Kaggle...")
         api.competition_submit(
             file_name=str(submission_path),
             message=message,
             competition=COMPETITION_NAME
         )
-        print("✅ Submission successful!")
-        print(f"⏳ Waiting {wait_time} seconds for processing...")
+        print("Submission successful!")
+        print(f"Waiting {wait_time} seconds for processing...")
         time.sleep(wait_time)
         
         # Check leaderboard with retries
         print("\n" + "=" * 70)
-        print("📊 CHECKING LEADERBOARD")
+        print("CHECKING LEADERBOARD")
         print("=" * 70)
         
         result = None
@@ -146,7 +161,7 @@ def submit_and_check(
             if result:
                 break
             elif attempt < max_retries:
-                print(f"⏳ Waiting {wait_time} more seconds...")
+                print(f"Waiting {wait_time} more seconds...")
                 time.sleep(wait_time)
         
         if result:
@@ -170,39 +185,39 @@ def submit_and_check(
             
             # Display results
             print("\n" + "=" * 70)
-            print("📈 SUBMISSION RESULTS")
+            print("SUBMISSION RESULTS")
             print("=" * 70)
-            print(f"🏆 Current Rank: {result['rank']}")
-            print(f"📊 Current Score: {result['score']:.5f} (RMSLE)")
-            print(f"📝 Total Submissions: {result['total_submissions']}")
-            print(f"📅 Submission Date: {result['submission_date']}")
+            print(f"Current Rank: {result['rank']}")
+            print(f"Current Score: {result['score']:.5f} (RMSLE)")
+            print(f"Total Submissions: {result['total_submissions']}")
+            print(f"Submission Date: {result['submission_date']}")
             
             if previous_best:
                 print("\n" + "-" * 70)
-                print("📊 COMPARISON WITH PREVIOUS BEST")
+                print("COMPARISON WITH PREVIOUS BEST")
                 print("-" * 70)
                 print(f"Previous Best Score: {previous_best['score']:.5f}")
                 print(f"Previous Best Rank: {previous_best['rank']}")
                 
                 if result['score'] < previous_best['score']:
                     improvement = previous_best['score'] - result['score']
-                    print(f"\n🎉 IMPROVEMENT! Better by {improvement:.5f}")
+                    print(f"\nIMPROVEMENT! Better by {improvement:.5f}")
                 elif result['score'] > previous_best['score']:
                     worse = result['score'] - previous_best['score']
-                    print(f"\n⚠️  Not an improvement. Worse by {worse:.5f}")
+                    print(f"\nNot an improvement. Worse by {worse:.5f}")
                 else:
-                    print(f"\n➡️  Same score as previous best")
+                    print(f"\nSame score as previous best")
             
             print("=" * 70)
             
             return result
         else:
-            print("\n⚠️  Could not retrieve leaderboard results.")
+            print("\nCould not retrieve leaderboard results.")
             print("   Check manually on Kaggle website.")
             return None
             
     except Exception as e:
-        print(f"\n❌ Error during submission: {e}")
+        print(f"\nError during submission: {e}")
         print("\nTroubleshooting:")
         print("1. Check your kaggle.json credentials")
         print("2. Verify internet connection")
