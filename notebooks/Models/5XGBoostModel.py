@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from xgboost import XGBRegressor
-from sklearn.model_selection import RandomizedSearchCV
 from config_local import local_config
 from config_local import model_config
+from utils.optimization import run_optuna_study
 
 
 if __name__ == "__main__":
@@ -20,26 +20,28 @@ if __name__ == "__main__":
     X = train.drop(columns=["logSP"])
 
     cfg = model_config.XGBOOST
-    xgb = XGBRegressor(**cfg["base_params"])
-
-    random_search = RandomizedSearchCV(
-        estimator=xgb,
-        param_distributions=cfg["param_dist"],
-        **cfg["search"]
+    
+    # Use Optuna for hyperparameter optimization
+    print("Running Optuna optimization for XGBoost...")
+    best_params = run_optuna_study(
+        X.values, 
+        y.values, 
+        model_type="xgboost",
+        base_params=cfg["base_params"],
+        optuna_space=cfg["optuna_space"],
+        n_trials=50  # Adjust based on time/resources
     )
 
-    print("Running RandomizedSearchCV for XGBoost...")
-    random_search.fit(X.values, y.values)
+    # Train final model with best params
+    print("Training final model with best hyperparameters...")
+    final_params = cfg["base_params"].copy()
+    final_params.update(best_params)
+    
+    best_model = XGBRegressor(**final_params)
+    best_model.fit(X.values, y.values)
 
-    print("\nBest params found:")
-    print(random_search.best_params_)
-
-    best_mse = -random_search.best_score_
-    best_rmse = best_mse ** 0.5
-    print(f"\nBest CV RMSE from RandomizedSearch: {best_rmse:.4f}")
-
-    best_model = random_search.best_estimator_
-    test_pred_log = best_model.predict(test)
+    # Predict on Kaggle test set
+    test_pred_log = best_model.predict(test.values)
     test_pred_real = np.expm1(test_pred_log)
 
     submission = pd.DataFrame({

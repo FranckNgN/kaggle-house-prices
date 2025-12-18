@@ -96,6 +96,16 @@ XGBOOST = {
         "verbose": 2,
         "random_state": 42,
     },
+    # Optuna search space
+    "optuna_space": {
+        "n_estimators": (500, 2000),
+        "learning_rate": (0.01, 0.1, "log"),
+        "max_depth": (3, 9),
+        "subsample": (0.6, 1.0),
+        "colsample_bytree": (0.6, 1.0),
+        "min_child_weight": (1, 10),
+        "gamma": (0, 5),
+    },
 }
 
 # ============================================================================
@@ -128,6 +138,18 @@ LIGHTGBM = {
         "verbose": 2,
         "random_state": 42,
     },
+    # Optuna search space
+    "optuna_space": {
+        "n_estimators": (500, 2000),
+        "learning_rate": (0.01, 0.1, "log"),
+        "num_leaves": (20, 150),
+        "max_depth": (3, 12),
+        "subsample": (0.6, 1.0),
+        "colsample_bytree": (0.6, 1.0),
+        "min_child_samples": (5, 50),
+        "reg_alpha": (0, 10),
+        "reg_lambda": (0, 10),
+    },
 }
 
 # ============================================================================
@@ -149,10 +171,15 @@ CATBOOST = {
     # Hyperparameter search space
     "search_space": {
         "l2_leaf_reg": [3.0, 5.0],
-        # Add more parameters here if you want to search over them
-        # "learning_rate": [0.01, 0.03, 0.05],
-        # "depth": [4, 6, 8],
-        # "iterations": [1500, 2000, 2500],
+    },
+    # Optuna search space
+    "optuna_space": {
+        "iterations": (1000, 3000),
+        "learning_rate": (0.01, 0.1, "log"),
+        "depth": (4, 10),
+        "l2_leaf_reg": (1, 10),
+        "bagging_temperature": (0, 1),
+        "random_strength": (0, 1),
     },
     # Cross-validation settings
     "cv": {
@@ -166,6 +193,33 @@ CATBOOST = {
         "verbose": 500,  # Print progress every N iterations
     },
     "final_fit_verbose": 200,  # Verbosity for final model training
+}
+
+# ============================================================================
+# BLENDING MODEL
+# ============================================================================
+BLENDING = {
+    # Dictionary mapping model name to its CSV filename in SUBMISSIONS_DIR
+    "models": {
+        "xgb": "xgboost_Model.csv",
+        "lgb": "lightGBM_Model.csv",
+        "cat": "catboost_Model.csv",
+        "ridge": "ridgeModel.csv",
+        "lasso": "lassoModel.csv",
+        "elasticNet": "elasticNetModel.csv",
+    },
+    # Weights for the weighted average blend
+    # Note: Only models listed here AND in "models" will be used.
+    # Set weights to 0.0 to exclude a model.
+    "weights": {
+        "xgb": 2.0,
+        "lgb": 0.5,
+        "cat": 1.0,
+        "ridge": 0.0,
+        "lasso": 0.0,
+        "elasticNet": 0.0,
+    },
+    "output_filename": "blend_xgb_lgb_cat_Model.csv"
 }
 
 # ============================================================================
@@ -193,6 +247,7 @@ def get_model_config(model_name: str) -> dict:
         "xgboost": XGBOOST,
         "lightgbm": LIGHTGBM,
         "catboost": CATBOOST,
+        "blending": BLENDING,
     }
     
     model_name_lower = model_name.lower().replace(" ", "_")
@@ -217,6 +272,7 @@ def print_all_configs():
         "XGBOOST": XGBOOST,
         "LIGHTGBM": LIGHTGBM,
         "CATBOOST": CATBOOST,
+        "BLENDING": BLENDING,
     }
     
     for name, config in configs.items():

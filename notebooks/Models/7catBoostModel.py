@@ -4,12 +4,11 @@
 import os
 import numpy as np
 import pandas as pd
-from itertools import product
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold
 from catboost import CatBoostRegressor
 from config_local import local_config
 from config_local import model_config
+from utils.optimization import run_optuna_study
 
 
 if __name__ == "__main__":
@@ -21,78 +20,35 @@ if __name__ == "__main__":
     X = train.drop(columns=["logSP"])
 
     cfg = model_config.CATBOOST
-    kf = KFold(
-        n_splits=cfg["cv"]["n_splits"],
-        shuffle=cfg["cv"]["shuffle"],
-        random_state=cfg["cv"]["random_state"]
+    
+    # Use Optuna for hyperparameter optimization
+    print("Running Optuna optimization for CatBoost...")
+    best_params = run_optuna_study(
+        X.values, 
+        y.values, 
+        model_type="catboost",
+        base_params=cfg["base_params"],
+        optuna_space=cfg["optuna_space"],
+        n_trials=30  # CatBoost is slow, fewer trials
     )
 
-    best_params = None
-    best_cv_rmse = float("inf")
-
-    print("Searching best CatBoost hyperparameters with 5-Fold CV...\n")
-
-    # Generate all parameter combinations from search space
-    base_params = cfg["base_params"].copy()
-    search_space = cfg["search_space"]
+    # Train final model with best params
+    print("Training final model with best hyperparameters...")
+    final_params = cfg["base_params"].copy()
+    final_params.update(best_params)
     
-    # Generate all combinations using itertools.product
-    param_names = list(search_space.keys())
-    param_value_lists = list(search_space.values())
-    
-    for param_combination in product(*param_value_lists):
-        params = base_params.copy()
-        for param_name, param_value in zip(param_names, param_combination):
-            params[param_name] = param_value
+    best_model = CatBoostRegressor(**final_params)
+    best_model.fit(X.values, y.values)
 
-        fold_rmses = []
-        param_str = ", ".join([f"{k}={v}" for k, v in params.items() if k in ["learning_rate", "depth", "l2_leaf_reg", "iterations"]])
-        print(f"Testing params: {param_str}")
+    # Predict on Kaggle test set
+    test_pred_log = best_model.predict(test.values)
+    test_pred_real = np.expm1(test_pred_log)
 
-        for fold, (train_idx, val_idx) in enumerate(kf.split(X), start=1):
-            print(f"    Starting fold {fold}...")
-            X_tr = X.iloc[train_idx]
-            X_val = X.iloc[val_idx]
-            y_tr = y.iloc[train_idx]
-            y_val = y.iloc[val_idx]
-
-            model = CatBoostRegressor(**params)
-            model.fit(
-                X_tr, y_tr,
-                eval_set=(X_val, y_val),
-                **cfg["fit_params"]
-            )
-
-            y_pred_log = model.predict(X_val)
-            rmse = mean_squared_error(y_val, y_pred_log) ** 0.5
-            fold_rmses.append(rmse)
-            print(f"  Fold {fold} log-RMSE: {rmse:.5f}")
-
-        mean_rmse = np.mean(fold_rmses)
-        print(f"--> Mean CV log-RMSE for these params: {mean_rmse:.5f}\n")
-
-        if mean_rmse < best_cv_rmse:
-            best_cv_rmse = mean_rmse
-            best_params = params.copy()
-
-    print("\n=====================================")
-    print("Best CatBoost params found:")
-    print(best_params)
-    print(f"Best mean CV log-RMSE: {best_cv_rmse:.5f}")
-    print("=====================================\n")
-
-    final_cat = CatBoostRegressor(**best_params)
-    print("Training final CatBoost model on all data with best hyperparameters...")
-    final_cat.fit(X, y, verbose=cfg["final_fit_verbose"])
-
-    test_pred_log_cat = final_cat.predict(test)
-    test_pred_real_cat = np.expm1(test_pred_log_cat)
-
-    submission_cat = pd.DataFrame({
+    submission = pd.DataFrame({
         "Id": testRaw.index,
-        "SalePrice": test_pred_real_cat
+        "SalePrice": test_pred_real
     })
 
-    out_path_cat = os.path.join(local_config.SUBMISSIONS_DIR, "catboost_Model.csv")
-    submission_cat.to_csv(out_path_cat, index=False)
-    print(f"CatBoost submission saved to: {out_path_cat}")
+    out_path = os.path.join(local_config.SUBMISSIONS_DIR, "catboost_Model.csv")
+    submission.to_csv(out_path, index=False)
+    print(f"Submission saved: {out_path}")

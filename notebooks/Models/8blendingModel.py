@@ -3,33 +3,44 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict
 
-from config_local import local_config
+from config_local import local_config, model_config
 
 
-def load_predictions() -> Dict[str, pd.DataFrame]:
-    """Load all model predictions."""
+def load_predictions(cfg: dict) -> Dict[str, pd.DataFrame]:
+    """Load all model predictions that have a non-zero weight."""
     predictions = {}
-    models = {
-        "xgb": "xgboost_Model.csv",
-        "lgb": "lightGBM_Model.csv",
-        "cat": "catboost_Model.csv"
-    }
+    models = cfg["models"]
+    weights = cfg["weights"]
     
-    for name, filename in models.items():
+    # Only load models that have a weight > 0
+    active_models = {name: filename for name, filename in models.items() 
+                     if weights.get(name, 0) > 0}
+    
+    if not active_models:
+        raise ValueError("No active models (weight > 0) found in configuration.")
+        
+    for name, filename in active_models.items():
         path = local_config.SUBMISSIONS_DIR / filename
         if not path.exists():
-            raise FileNotFoundError(f"Prediction file not found: {path}")
+            print(f"Warning: Prediction file not found: {path}. Skipping model: {name}")
+            continue
         predictions[name] = pd.read_csv(path)
     
+    if not predictions:
+        raise FileNotFoundError("No prediction files found in submissions directory.")
+        
     return predictions
 
 
 def validate_alignment(predictions: Dict[str, pd.DataFrame]) -> None:
     """Validate that all predictions have aligned Id columns."""
-    ids = [pred["Id"] for pred in predictions.values()]
-    for i, id_col in enumerate(ids[1:], start=1):
-        if not ids[0].equals(id_col):
-            raise ValueError(f"Id alignment mismatch between predictions {i} and 0")
+    model_names = list(predictions.keys())
+    first_model = model_names[0]
+    first_ids = predictions[first_model]["Id"]
+    
+    for name in model_names[1:]:
+        if not first_ids.equals(predictions[name]["Id"]):
+            raise ValueError(f"Id alignment mismatch between {name} and {first_model}")
 
 
 def blend_predictions(
@@ -38,58 +49,58 @@ def blend_predictions(
 ) -> pd.DataFrame:
     """
     Blend predictions using weighted average.
-    
-    Args:
-        predictions: Dictionary mapping model names to DataFrames
-        weights: Dictionary mapping model names to weights
-        
-    Returns:
-        Blended predictions DataFrame
     """
-    # Normalize weights
-    total_weight = sum(weights.values())
-    normalized_weights = {k: v / total_weight for k, v in weights.items()}
+    # Use only models we successfully loaded
+    active_model_names = list(predictions.keys())
     
-    # Initialize blended predictions
-    blend = predictions["xgb"].copy()
+    # Filter weights to only include loaded models and normalize
+    active_weights = {name: weights[name] for name in active_model_names}
+    total_weight = sum(active_weights.values())
+    
+    if total_weight == 0:
+        raise ValueError("Total weight of loaded models is zero.")
+        
+    normalized_weights = {k: v / total_weight for k, v in active_weights.items()}
+    
+    # Initialize blended predictions with the first available model
+    first_name = active_model_names[0]
+    blend = predictions[first_name].copy()
+    
+    # Start SalePrice at zero to build the weighted sum
+    blend["SalePrice"] = 0.0
     
     # Weighted average
-    blend["SalePrice"] = sum(
-        normalized_weights[name] * pred["SalePrice"]
-        for name, pred in predictions.items()
-    )
+    for name, pred in predictions.items():
+        weight = normalized_weights[name]
+        blend["SalePrice"] += weight * pred["SalePrice"]
+        print(f"  - Applied {name} with normalized weight: {weight:.4f}")
     
     return blend
 
 
 def main() -> None:
     """Main entry point for blending."""
+    cfg = model_config.BLENDING
+    
     # Load predictions
-    print("📥 Loading predictions...")
-    predictions = load_predictions()
+    print("--- Loading predictions ---")
+    predictions = load_predictions(cfg)
     
     # Validate alignment
-    print("✅ Validating alignment...")
+    print("--- Validating alignment ---")
     validate_alignment(predictions)
     
-    # Blending weights
-    weights = {
-        "xgb": 2.0,
-        "lgb": 0.5,
-        "cat": 1.0
-    }
-    
-    print(f"⚖️  Blending with weights: {weights}")
+    print(f"Blending {len(predictions)} models...")
     
     # Blend predictions
-    blend = blend_predictions(predictions, weights)
+    blend = blend_predictions(predictions, cfg["weights"])
     
     # Save blended file
-    output_path = local_config.SUBMISSIONS_DIR / "blend_xgb_lgb_cat_Model.csv"
+    output_path = local_config.SUBMISSIONS_DIR / cfg["output_filename"]
     blend.to_csv(output_path, index=False)
     
-    print(f"✅ Blended predictions saved to: {output_path}")
-    print(f"📊 Prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")
+    print(f"--- Blended predictions saved to: {output_path} ---")
+    print(f"Prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")
 
 
 if __name__ == "__main__":

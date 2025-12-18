@@ -4,6 +4,9 @@ pandas==2.3.3
 scikit-learn==1.7.2
 scipy==1.16.2
 
+# Hyperparameter Optimization
+optuna>=3.0.0
+
 # Tree-based Models
 xgboost>=2.0.0
 lightgbm>=4.0.0
