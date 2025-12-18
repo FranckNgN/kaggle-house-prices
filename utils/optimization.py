@@ -83,5 +83,5 @@ def run_optuna_study(
     print(f"Best CV RMSE: {study.best_value:.4f}")
     print(f"{'='*60}\n")
     
-    return study.best_params
+    return study.best_params, study.best_value
 

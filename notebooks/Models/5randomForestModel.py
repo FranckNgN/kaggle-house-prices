@@ -9,6 +9,7 @@ from config_local import local_config
 from config_local import model_config
 from utils.optimization import run_optuna_study
 from utils.data import load_sample_submission
+from utils.metrics import log_model_result
 
 
 if __name__ == "__main__":
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     
     # Use Optuna for hyperparameter optimization
     print("Running Optuna optimization for Random Forest...")
-    best_params = run_optuna_study(
+    best_params, best_rmse = run_optuna_study(
         X.values, 
         y.values, 
         model_type="random_forest",
@@ -32,6 +33,14 @@ if __name__ == "__main__":
         n_trials=opt_cfg["n_trials"],
         n_splits=opt_cfg["n_splits"],
         random_state=opt_cfg["random_state"]
+    )
+
+    # Log results
+    log_model_result(
+        model_name="random_forest",
+        rmse=best_rmse,
+        hyperparams={**cfg["base_params"], **best_params},
+        notes="Optuna Optimized"
     )
 
     # Train final model with best params

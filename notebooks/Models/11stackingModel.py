@@ -16,6 +16,7 @@ from sklearn.metrics import mean_squared_error
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
+from utils.metrics import log_model_result
 
 def get_base_model(model_name, params):
     """Factory for creating base models."""
@@ -115,6 +116,20 @@ if __name__ == "__main__":
         rmse = np.sqrt(mean_squared_error(y, oof_train[:, i]))
         print(f"    {model_name} OOF RMSE: {rmse:.4f}")
 
+        # Get params for logging
+        model_cfg = model_config.get_model_config(model_name)
+        log_params = model_cfg.get("base_params", {})
+        if not log_params:
+            # Fallback for models without base_params (like linear models in some configs)
+            log_params = {k: v for k, v in model_cfg.items() if k not in ["submission_name", "submission_filename"]}
+
+        log_model_result(
+            model_name=model_name,
+            rmse=rmse,
+            hyperparams=log_params,
+            notes="Base model for Stacking"
+        )
+
     # Meta-model training
     print(f"\nTraining meta-model: {cfg['meta_model'].upper()}")
     if cfg["meta_model"] == "lasso":
@@ -125,6 +140,22 @@ if __name__ == "__main__":
         meta_model = Ridge() # Default
 
     meta_model.fit(oof_train, y)
+    
+    # Calculate Stacking CV/OOF RMSE
+    y_stack_pred = meta_model.predict(oof_train)
+    stack_rmse = np.sqrt(mean_squared_error(y, y_stack_pred))
+    print(f"\nStacking Meta-model OOF RMSE: {stack_rmse:.4f}")
+
+    log_model_result(
+        model_name="STACKING_META",
+        rmse=stack_rmse,
+        hyperparams={
+            "meta_model": cfg["meta_model"],
+            "meta_params": cfg.get("meta_model_params", {}),
+            "base_models": base_model_names
+        },
+        notes=f"Full Stacking with {len(base_model_names)} models"
+    )
     
     # Final predictions
     print("Generating final predictions...")
