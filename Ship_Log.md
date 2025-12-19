@@ -301,21 +301,61 @@ house-prices-starter/
 
 ---
 
+## Automation & Tooling
+
+### Model Execution
+- **Parallel Execution**: `scripts/run_all_models_parallel.py` - Run multiple models in parallel using ProcessPoolExecutor
+- **Selective Execution**: Filter models by category (linear, tree-based, ensemble)
+- **Runtime Tracking**: Automatic measurement and logging of model training time
+
+### Hyperparameter Optimization
+- **Optuna Integration**: Bayesian optimization with TPE sampler for all tree-based models
+- **Optimized Settings**: Configurable trials, CV splits, and search spaces in `config_local/model_config.py`
+- **Target Runtime**: ~20 minutes per model with balanced optimization depth
+
+### Kaggle Integration
+- **Automatic Score Retrieval**: `utils/kaggle_helper.py` - Automatically fetches and logs leaderboard scores
+- **Duplicate Prevention**: File hash tracking prevents wasting daily submissions (10/day limit)
+- **Submission Scripts**:
+  - `scripts/submit_to_kaggle.py` - Single model submission with pre-checks
+  - `scripts/submit_all_models_auto.py` - Batch submission with smart filtering
+  - `scripts/get_kaggle_score.py` - Manual score retrieval and logging
+  - `scripts/check_submission_status.py` - View submission history and pending models
+- **Submission Logging**: Tracks all submissions with scores, timestamps, and file hashes
+
+### Performance Tracking
+- **Model Performance Log**: `runs/model_performance.csv` - Centralized logging of:
+  - CV RMSE scores
+  - Hyperparameters (JSON format)
+  - Feature engineering details (hash-based tracking)
+  - Runtime (human-readable format)
+  - Kaggle leaderboard scores
+- **Automatic Logging**: All models automatically log results after training
+
+---
+
 ## Current Status
 
 ✅ **Completed**:
 - Full 6-stage preprocessing pipeline
-- 7 individual models (4 linear, 3 tree-based)
-- Ensemble blending model
+- 11 individual models (4 linear, 3 tree-based, 1 SVR, 1 Random Forest, 2 ensemble)
 - Automated preprocessing execution
 - Configuration management system
+- Parallel model execution
+- Hyperparameter optimization with Optuna
+- Kaggle submission automation with duplicate prevention
+- Comprehensive performance tracking
 
-📊 **Model Performance Summary**:
-- **Best Linear Model**: Ridge (CV RMSE: 20,562.79 | Kaggle: RMSLE 0.13272, Rank 2167)
-- **Best Tree Model**: LightGBM (Kaggle: RMSLE 0.12647, Rank 1215)
-- **XGBoost**: Kaggle RMSLE 0.13125, Rank 1215
-- **CatBoost**: CV RMSE 0.12054 (log space)
-- **Ensemble**: Weighted blend of XGBoost, LightGBM, CatBoost
+📊 **Model Performance Summary** (Kaggle RMSLE):
+- **Best Overall**: CatBoost - 0.12973
+- **XGBoost**: 0.13335
+- **Random Forest**: 0.14460
+- **Blending**: 0.14480
+- **SVR**: 0.18191
+- **Stacking**: 0.62673
+- **Ridge**: 1.41358
+- **Lasso**: 1.97336
+- **Elastic Net**: 0.63422
 
 ---
 
@@ -326,4 +366,6 @@ house-prices-starter/
 - Cross-validation consistently uses 5-fold KFold across all models
 - Preprocessing pipeline is modular and can be re-run independently
 - Feature engineering focused on temporal relationships and clustering patterns
+- Submission system optimizes daily Kaggle limit (10/day) by detecting duplicates via file hashing
+- All Kaggle scores automatically retrieved and logged to performance tracking system
 
