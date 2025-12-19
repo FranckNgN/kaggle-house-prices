@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Tuple, Optional, Dict, List
+from typing import Tuple, Optional, Dict, List, Union
 from scipy import stats
 import warnings
 
@@ -295,13 +295,36 @@ def check_feature_engineering_sanity(
 ) -> None:
     """Check that engineered features are logically correct."""
     # Check for negative values where they shouldn't exist
-    area_cols = [c for c in train_df.columns if 'SF' in c or 'Area' in c or 'Size' in c]
-    for col in area_cols:
-        if col in train_df.columns and train_df[col].dtype in [np.float64, np.int64]:
-            if (train_df[col] < 0).any():
-                raise DataIntegrityError(
-                    f"[{stage_name}] Feature {col} has negative values"
-                )
+    # Note: After Yeo-Johnson transformation (stage 3), some area features may have negative values
+    # This is expected behavior for the transformation, so we skip this check for stage 4+
+    if "Stage 4" in stage_name or "Stage 5" in stage_name or "Stage 6" in stage_name:
+        # After transformations, negative values are acceptable for transformed features
+        # Only check for extreme outliers or infinite values
+        area_cols = [c for c in train_df.columns if 'SF' in c or 'Area' in c or 'Size' in c]
+        for col in area_cols:
+            if col in train_df.columns and train_df[col].dtype in [np.float64, np.int64]:
+                if not np.isfinite(train_df[col]).all():
+                    raise DataIntegrityError(
+                        f"[{stage_name}] Feature {col} has non-finite values"
+                    )
+                # Check for extreme outliers (values > 3 standard deviations from mean)
+                mean_val = train_df[col].mean()
+                std_val = train_df[col].std()
+                if std_val > 0:
+                    extreme = (train_df[col] < mean_val - 5 * std_val) | (train_df[col] > mean_val + 5 * std_val)
+                    if extreme.sum() > len(train_df) * 0.01:  # More than 1% extreme values
+                        warnings.warn(
+                            f"[{stage_name}] Feature {col} has many extreme values (>5 std dev)"
+                        )
+    else:
+        # For earlier stages, negative area values are not acceptable
+        area_cols = [c for c in train_df.columns if 'SF' in c or 'Area' in c or 'Size' in c]
+        for col in area_cols:
+            if col in train_df.columns and train_df[col].dtype in [np.float64, np.int64]:
+                if (train_df[col] < 0).any():
+                    raise DataIntegrityError(
+                        f"[{stage_name}] Feature {col} has negative values"
+                    )
     
     # Check age features are reasonable
     age_cols = [c for c in train_df.columns if 'Age' in c]
@@ -457,7 +480,7 @@ def validate_preprocessing_stage(
     train_after_path: Optional[Path] = None,
     test_after_path: Optional[Path] = None,
     stop_on_error: bool = True
-) -> Dict[str, any]:
+) -> Dict[str, Union[bool, str, List[str]]]:
     """
     Comprehensive validation for a preprocessing stage.
     
@@ -590,7 +613,16 @@ def validate_preprocessing_stage(
         print(f"\n{Fore.CYAN}[5/7] Checking target integrity...{Style.RESET_ALL}")
         if target_col in train_after.columns:
             try:
-                check_target_not_in_features(train_after, stage_name, target_col)
+                # Only check logSP transformation if both SalePrice and logSP exist
+                # (logSP is created in stage 2, so stage 1 won't have this check)
+                if target_col == 'logSP' and 'SalePrice' in train_after.columns:
+                    check_target_not_in_features(train_after, stage_name, target_col)
+                elif target_col == 'SalePrice':
+                    # For stage 1, just check that SalePrice is valid
+                    if train_after[target_col].isnull().any():
+                        raise DataIntegrityError(f"[{stage_name}] Target {target_col} has missing values")
+                    if (train_after[target_col] <= 0).any():
+                        raise DataIntegrityError(f"[{stage_name}] Target {target_col} has non-positive values")
                 print_success(f"Target '{target_col}' is valid")
             except DataIntegrityError as e:
                 error_msg = f"TARGET ISSUE: {str(e)}"
@@ -706,8 +738,8 @@ def _ks_stat(s: pd.Series, dist_name: str = "norm") -> float:
     return float(ks_stat)
 
 def evaluate_many(
-    series_dict: dict[str, pd.Series],
-    thresholds: dict[str, float] | None = None
+    series_dict: Dict[str, pd.Series],
+    thresholds: Optional[Dict[str, float]] = None
 ) -> pd.DataFrame:
     """
     Check distribution shape & fit for multiple series.
