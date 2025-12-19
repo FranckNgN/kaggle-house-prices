@@ -19,6 +19,12 @@ try:
     import config_local.local_config as config
     from utils.validation import validate_dataframe, validate_column_parity, check_skewness
     from utils.engineering import reset_engineering_summary
+    from utils.checks import (
+        validate_preprocessing_stage,
+        DataLeakageError,
+        DataIntegrityError,
+        print_error
+    )
 except ImportError:
     print("ERROR: Required modules not found.")
     sys.exit(1)
@@ -183,13 +189,68 @@ def main() -> None:
     print("=" * 50)
 
     for f in files_to_run:
-        run_file(f)
-        # Extract stage number from filename (assuming name starts with digit)
         stage_num = int(f.name[0])
-        validate_stage(stage_num)
+        
+        # ================================================================
+        # STEP 1: Run the preprocessing file
+        # ================================================================
+        print(f"\n{'='*60}")
+        print(f"RUNNING: {f.name}")
+        print(f"{'='*60}")
+        
+        try:
+            run_file(f)
+            print(f"\n✅ {f.name} completed successfully")
+        except Exception as e:
+            print_error(
+                f"Failed to run {f.name}",
+                "EXECUTION ERROR"
+            )
+            print(f"\nError details: {str(e)}")
+            print(f"\n❌ PIPELINE STOPPED: Cannot continue after file execution failure")
+            sys.exit(1)
+        
+        # ================================================================
+        # STEP 2: Validate immediately after file runs
+        # ================================================================
+        try:
+            # This will STOP the pipeline if any check fails
+            validate_preprocessing_stage(stage_num, stop_on_error=True)
+            
+        except DataLeakageError as e:
+            print_error(
+                f"DATA LEAKAGE detected in Stage {stage_num}",
+                "CRITICAL ERROR"
+            )
+            print(f"\n{'='*60}")
+            print(f"PIPELINE STOPPED")
+            print(f"{'='*60}")
+            print(f"\n⚠️  Fix the issue in {f.name} before continuing.")
+            sys.exit(1)
+            
+        except DataIntegrityError as e:
+            print_error(
+                f"Data integrity issue in Stage {stage_num}",
+                "CRITICAL ERROR"
+            )
+            print(f"\n{'='*60}")
+            print(f"PIPELINE STOPPED")
+            print(f"{'='*60}")
+            print(f"\n⚠️  Fix the issue in {f.name} before continuing.")
+            sys.exit(1)
+            
+        except Exception as e:
+            print_error(
+                f"Validation error in Stage {stage_num}: {str(e)}",
+                "VALIDATION ERROR"
+            )
+            print(f"\n{'='*60}")
+            print(f"PIPELINE STOPPED")
+            print(f"{'='*60}")
+            sys.exit(1)
 
     print("\n" + "=" * 50)
-    print("ALL FILES COMPLETED")
+    print("✅ ALL FILES COMPLETED AND VALIDATED")
     print("=" * 50)
 
 

@@ -32,6 +32,9 @@ pytz==2025.2
 # Testing
 pytest>=7.0.0
 
+# Terminal Colors (for error highlighting)
+colorama>=0.4.6
+
 # Optional: Data Analysis
 dython==0.7.11
 
