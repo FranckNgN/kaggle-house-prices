@@ -20,7 +20,7 @@ This project implements a comprehensive 6-stage preprocessing pipeline followed 
 
 ```bash
 # Clone the repository
-git clone https://github.com/FranckNgN/kaggle-house-prices.git
+git clone https://github.com/YOUR_USERNAME/kaggle-house-prices.git
 cd kaggle-house-prices
 
 # Create virtual environment

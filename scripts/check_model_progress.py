@@ -10,8 +10,12 @@ import subprocess
 import psutil
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+import config_local.local_config as config
+
 MODELS_DIR = PROJECT_ROOT / "notebooks" / "Models"
-SUBMISSIONS_DIR = PROJECT_ROOT / "data" / "submissions"
+SUBMISSIONS_DIR = config.SUBMISSIONS_DIR
 
 def get_model_scripts():
     """Get all model scripts."""
@@ -107,7 +111,7 @@ def main():
     print(f"Remaining: {len(all_models) - len(completed)}")
     
     # Check for results file
-    results_file = PROJECT_ROOT / "runs" / "model_training_results.txt"
+    results_file = config.MODEL_TRAINING_RESULTS_TXT
     if results_file.exists():
         print(f"\n[OK] Results file exists: {results_file}")
         print("  (This means the parallel script has finished)")

@@ -13,11 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from utils.kaggle_helper import submit_and_check, load_submission_log
+import config_local.local_config as config
 
 
 def get_available_submissions() -> List[Dict]:
     """Get list of available submission CSV files (searching recursively)."""
-    submissions_dir = Path("data/submissions")
+    submissions_dir = config.SUBMISSIONS_DIR
     if not submissions_dir.exists():
         return []
     

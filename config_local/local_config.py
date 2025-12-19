@@ -10,6 +10,10 @@ OOF_DIR = INTERIM_DIR / "oof"
 PROCESSED_DIR = DATA_DIR / "processed"
 SUBMISSIONS_DIR = DATA_DIR / "submissions"
 
+# Runs and outputs
+RUNS_DIR = ROOT / "runs"
+KAGGLE_DIR = ROOT / ".kaggle"
+
 # Raw
 TRAIN_CSV = RAW_DIR / "train.csv"
 TEST_CSV = RAW_DIR / "test.csv"
@@ -37,6 +41,15 @@ SALEPRICE_TRANSFORMS_CSV = PROCESSED_DIR / "salePrice_transforms.csv"
 
 # Submissions
 SAMPLE_SUBMISSION_CSV = SUBMISSIONS_DIR / "sample_submission.csv"
+SUBMISSION_LOG_JSON = SUBMISSIONS_DIR / "submission_log.json"
+
+# Kaggle
+KAGGLE_JSON = KAGGLE_DIR / "kaggle.json"
+
+# Runs
+MODEL_PERFORMANCE_CSV = RUNS_DIR / "model_performance.csv"
+MODEL_TRAINING_RESULTS_TXT = RUNS_DIR / "model_training_results.txt"
+MODEL_TEST_RESULTS_TXT = RUNS_DIR / "model_test_results.txt"
 
 
 def get_model_submission_path(model_name: str, filename: str = None) -> Path:
@@ -67,7 +80,8 @@ def validate_paths() -> bool:
         INTERIM_TRAIN_DIR, 
         INTERIM_TEST_DIR, 
         PROCESSED_DIR, 
-        SUBMISSIONS_DIR
+        SUBMISSIONS_DIR,
+        RUNS_DIR
     ]
     missing = [d for d in required_dirs if not d.exists()]
     

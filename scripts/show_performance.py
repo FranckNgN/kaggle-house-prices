@@ -3,8 +3,12 @@ import json
 import os
 import argparse
 from pathlib import Path
+import config_local.local_config as config
 
-def show_performance(log_path="runs/model_performance.csv", show_details=False):
+def show_performance(log_path=None, show_details=False):
+    """Show model performance logs."""
+    if log_path is None:
+        log_path = config.MODEL_PERFORMANCE_CSV
     if not os.path.exists(log_path):
         print(f"\nNo performance logs found at {log_path}")
         print("Run a model script (e.g., python notebooks/Models/11stackingModel.py) to generate logs.\n")
@@ -43,7 +47,7 @@ def show_performance(log_path="runs/model_performance.csv", show_details=False):
         print("\n" + "="*80)
         print("      ENGINEERING DETAILS FOR LATEST RUNS")
         print("="*80)
-        feat_dir = Path(log_path).parent / "feature_definitions"
+        feat_dir = config.RUNS_DIR / "feature_definitions"
         
         # Show details for the top 3 unique feature hashes
         seen_hashes = set()

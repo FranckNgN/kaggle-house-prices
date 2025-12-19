@@ -18,6 +18,8 @@ import time
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import config_local.local_config as config
+
 # Model scripts directory
 MODELS_DIR = PROJECT_ROOT / "notebooks" / "Models"
 
@@ -317,7 +319,7 @@ def main():
     print("=" * 70)
     
     # Save results to file
-    results_file = PROJECT_ROOT / "runs" / "model_training_results.txt"
+    results_file = config.MODEL_TRAINING_RESULTS_TXT
     results_file.parent.mkdir(parents=True, exist_ok=True)
     
     with open(results_file, 'w') as f:
@@ -377,7 +379,7 @@ def main():
                     print(f"Exit code: {result.returncode}")
                 
                 # Save test results
-                test_results_file = PROJECT_ROOT / "runs" / "model_test_results.txt"
+                test_results_file = config.MODEL_TEST_RESULTS_TXT
                 with open(test_results_file, 'w') as f:
                     f.write("MODEL VALIDATION TEST RESULTS\n")
                     f.write("=" * 70 + "\n")
@@ -434,7 +436,7 @@ def main():
                     print("\n" + "=" * 70)
                     print("[SUCCESS] MODEL COMPARISON COMPLETED")
                     print("=" * 70)
-                    print("Comparison plots saved to: runs/latest/comparison/")
+                    print(f"Comparison plots saved to: {config.RUNS_DIR / 'latest' / 'comparison'}")
                 else:
                     print("\n" + "=" * 70)
                     print("[WARNING] MODEL COMPARISON HAD ISSUES")

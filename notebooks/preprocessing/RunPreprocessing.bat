@@ -1,9 +1,14 @@
 @echo off
-REM Go to project root
-cd /d D:\Project\Kaggle\house-prices-starter
+REM Get the directory where this batch file is located
+set SCRIPT_DIR=%~dp0
+
+REM Go to project root (3 levels up from notebooks/preprocessing/)
+cd /d "%SCRIPT_DIR%..\.."
 
 REM Activate venv
-call .venv\Scripts\activate.bat
+if exist .venv\Scripts\activate.bat (
+    call .venv\Scripts\activate.bat
+)
 
 REM Run the preprocessing script
 python notebooks\preprocessing\run_preprocessing.py

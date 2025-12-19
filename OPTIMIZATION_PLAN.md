@@ -6,10 +6,15 @@
 **File**: `notebooks/preprocessing/run_preprocessing.py:12`
 ```python
 # Current (BAD):
-INTERIM_DIR = Path(r"D:\Project\Kaggle\house-prices-starter\data\interim")
+INTERIM_DIR = Path(r"C:\Users\YourName\Projects\your-project\data\interim")
 
-# Should be:
-INTERIM_DIR = ROOT.parent.parent / "data" / "interim"
+# Should be (using config):
+import config_local.local_config as config
+INTERIM_DIR = config.INTERIM_DIR
+
+# Or if you must define locally:
+ROOT = Path(__file__).resolve().parents[2]  # Adjust based on file location
+INTERIM_DIR = ROOT / "data" / "interim"
 ```
 
 ### 2. Missing Dependencies

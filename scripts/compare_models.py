@@ -4,9 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from config_local import local_config
+from config_local import local_config as config
 
-def load_all_submissions(submissions_dir):
+def load_all_submissions(submissions_dir=None):
+    """Load all model submission CSVs into a dictionary of DataFrames."""
+    if submissions_dir is None:
+        submissions_dir = config.SUBMISSIONS_DIR
     """Load all model submission CSVs into a dictionary of DataFrames."""
     submissions = {}
     
@@ -107,8 +110,8 @@ def plot_comparison(df, output_dir):
     print(f"Comparison plots saved to: {output_dir}")
 
 def main():
-    submissions_dir = local_config.SUBMISSIONS_DIR
-    output_dir = Path("runs/latest/comparison")
+    submissions_dir = config.SUBMISSIONS_DIR
+    output_dir = config.RUNS_DIR / "latest" / "comparison"
     
     print(f"Loading submissions from {submissions_dir}...")
     df_compare = load_all_submissions(submissions_dir)
