@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """
-Run all model training scripts with hybrid strategy:
-- Linear models (0-4) run in parallel
-- Demanding models (5-11) run sequentially, one by one, in order
+Run linear model training scripts in parallel.
+- Linear models (0-4) run in parallel: linear regression, ridge, lasso, elastic net
+- Random forest and all subsequent models (5-11) are excluded
 
-This balances speed for fast models while preventing resource exhaustion
-for memory-intensive models like XGBoost, CatBoost, and Stacking.
+This focuses on fast linear models only, excluding memory-intensive models.
 """
 import sys
 import subprocess
 import os
+import re
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import time
@@ -38,17 +38,41 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
     start_time = time.time()
     
     try:
-        # Set PYTHONPATH to include project root
+        # Set PYTHONPATH to include project root (use absolute path)
         env = os.environ.copy()
-        env["PYTHONPATH"] = str(PROJECT_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+        project_root_abs = str(PROJECT_ROOT.resolve())
+        
+        # Build PYTHONPATH with project root first
+        current_pythonpath = env.get("PYTHONPATH", "")
+        if current_pythonpath:
+            # Avoid duplicates
+            paths = [project_root_abs]
+            for p in current_pythonpath.split(os.pathsep):
+                if p and p != project_root_abs:
+                    paths.append(p)
+            env["PYTHONPATH"] = os.pathsep.join(paths)
+        else:
+            env["PYTHONPATH"] = project_root_abs
         
         # Set environment variable to enable validation if requested
         if enable_validation:
             env["ENABLE_MODEL_VALIDATION"] = "1"
         
-        # Run the script
+        # Run the script directly with PYTHONPATH set
+        # Also prepend project root to sys.path using PYTHONSTARTUP-like approach
+        # Create a wrapper that sets up the path and then runs the script
+        wrapper_code = f"""
+import sys
+import os
+sys.path.insert(0, r'{project_root_abs}')
+os.chdir(r'{PROJECT_ROOT.resolve()}')
+with open(r'{script_path.resolve()}', 'r', encoding='utf-8') as f:
+    code = compile(f.read(), r'{script_path.resolve()}', 'exec')
+    exec(code, {{'__name__': '__main__', '__file__': r'{script_path.resolve()}'}})
+"""
+        
         result = subprocess.run(
-            [sys.executable, str(script_path)],
+            [sys.executable, "-u", "-c", wrapper_code],
             cwd=str(PROJECT_ROOT),
             capture_output=True,
             text=True,
@@ -69,6 +93,26 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
             }
         else:
             print(f"[FAILED] {model_name} failed after {elapsed_time:.1f}s", flush=True)
+            # Print error details immediately for debugging
+            if result.stderr:
+                print(f"[ERROR DETAILS] {model_name} stderr:", flush=True)
+                error_lines = result.stderr.strip().split('\n')
+                for line in error_lines[:20]:  # Print first 20 lines
+                    if line.strip():
+                        print(f"  {line}", flush=True)
+                if len(error_lines) > 20:
+                    print(f"  ... ({len(error_lines) - 20} more lines)", flush=True)
+            if result.stdout:
+                # Sometimes errors are in stdout
+                stdout_lines = result.stdout.strip().split('\n')
+                error_indicators = ['error', 'exception', 'traceback', 'failed', 'missing']
+                error_lines = [line for line in stdout_lines if any(ind in line.lower() for ind in error_indicators)]
+                if error_lines:
+                    print(f"[ERROR DETAILS] {model_name} stdout (error lines):", flush=True)
+                    for line in error_lines[:10]:
+                        if line.strip():
+                            print(f"  {line}", flush=True)
+            print("-" * 70, flush=True)
             return {
                 "model": model_name,
                 "status": "failed",
@@ -113,12 +157,19 @@ def categorize_models(scripts: list) -> tuple:
     Returns:
         (linear_models, demanding_models) - both sorted by number
     """
-    linear_models = []  # Models 0-4: linear, ridge, lasso, elastic net
+    import re
+    linear_models = []  # Models 0-4: linear, ridge, lasso, elastic net (everything up to random forest excluded)
     demanding_models = []  # Models 5-11: RF, SVR, XGBoost, LightGBM, CatBoost, blending, stacking
     
     for script in scripts:
-        model_num = int(script.name[0]) if script.name[0].isdigit() else 99
-        if model_num <= 4:
+        # Extract the full number from the beginning of the filename (handles single and multi-digit numbers)
+        match = re.match(r'^(\d+)', script.name)
+        if match:
+            model_num = int(match.group(1))
+        else:
+            model_num = 99
+        
+        if model_num < 5:  # Only models 0-4 (exclude random forest and above)
             linear_models.append(script)
         else:
             demanding_models.append(script)
@@ -129,9 +180,10 @@ def categorize_models(scripts: list) -> tuple:
 def main():
     """Main execution function."""
     print("=" * 70)
-    print("HYBRID MODEL TRAINING")
+    print("LINEAR MODEL TRAINING")
     print("=" * 70)
-    print("Strategy: Linear models in parallel, then demanding models sequentially")
+    print("Strategy: Running only linear models (0-4) in parallel")
+    print("         Excluding random forest and all subsequent models")
     print("=" * 70)
     
     # Get all model scripts
@@ -144,24 +196,23 @@ def main():
     # Categorize models
     linear_models, demanding_models = categorize_models(all_scripts)
     
-    print(f"\nFound {len(all_scripts)} model scripts:")
+    print(f"\nFound {len(all_scripts)} total model scripts:")
     print(f"\n  Linear models (will run in parallel): {len(linear_models)}")
     for script in linear_models:
         print(f"    - {script.name}")
     
-    print(f"\n  Demanding models (will run sequentially): {len(demanding_models)}")
-    for script in demanding_models:
-        print(f"    - {script.name}")
+    if demanding_models:
+        print(f"\n  Skipped models (not running): {len(demanding_models)}")
+        for script in demanding_models:
+            print(f"    - {script.name}")
     
     # Check for --yes flag to skip confirmation
     skip_confirmation = '--yes' in sys.argv or '-y' in sys.argv
     
     if not skip_confirmation:
         # Ask for confirmation
-        print(f"\nThis will:")
-        print(f"  1. Run {len(linear_models)} linear models in parallel")
-        print(f"  2. Then run {len(demanding_models)} demanding models one by one")
-        print("Note: This may use significant CPU/memory resources.")
+        print(f"\nThis will run {len(linear_models)} linear models in parallel.")
+        print("Note: Random forest and all subsequent models will be skipped.")
         try:
             response = input("Continue? (y/n): ").strip().lower()
             if response != 'y':
@@ -171,7 +222,7 @@ def main():
             # Non-interactive mode, proceed automatically
             print("Non-interactive mode detected. Proceeding...")
     else:
-        print(f"\nRunning models (--yes flag detected)...")
+        print(f"\nRunning {len(linear_models)} linear models in parallel (--yes flag detected)...")
     
     start_time = time.time()
     results = []
@@ -220,32 +271,16 @@ def main():
         print(f"\n[PHASE 1 COMPLETE] All {len(linear_models)} linear models finished.", flush=True)
     
     # ================================================================
-    # PHASE 2: Run demanding models sequentially, one by one
+    # PHASE 2: Skip demanding models (random forest and above)
     # ================================================================
     if demanding_models:
         print("\n" + "=" * 70)
-        print("PHASE 2: RUNNING DEMANDING MODELS SEQUENTIALLY")
+        print("SKIPPING DEMANDING MODELS")
         print("=" * 70)
-        print(f"Running {len(demanding_models)} demanding models one by one in order...")
-        print("-" * 70, flush=True)
-        
-        for idx, script in enumerate(demanding_models, 1):
-            model_name = script.stem
-            print(f"\n[{idx}/{len(demanding_models)}] Starting: {model_name}", flush=True)
-            
-            try:
-                result = run_model_script(script)
-                results.append(result)
-                print(f"[{idx}/{len(demanding_models)}] Completed: {model_name}", flush=True)
-            except Exception as e:
-                print(f"[EXCEPTION] {model_name}: {str(e)}", flush=True)
-                results.append({
-                    "model": model_name,
-                    "status": "exception",
-                    "error": str(e)
-                })
-        
-        print(f"\n[PHASE 2 COMPLETE] All {len(demanding_models)} demanding models finished.", flush=True)
+        print(f"Skipping {len(demanding_models)} models (random forest and above):")
+        for script in demanding_models:
+            print(f"  - {script.name}")
+        print("=" * 70, flush=True)
     
     total_time = time.time() - start_time
     
@@ -263,12 +298,12 @@ def main():
     print(f"Total execution time: {total_time:.1f}s")
     
     if successful:
-        print(f"\n✅ Successful models:")
+        print(f"\n[SUCCESS] Successful models:")
         for r in successful:
             print(f"  - {r['model']} ({r.get('elapsed_time', 0):.1f}s)")
     
     if failed:
-        print(f"\n❌ Failed models:")
+        print(f"\n[FAILED] Failed models:")
         for r in failed:
             status = r.get("status", "unknown")
             print(f"  - {r['model']} ({status})")
@@ -333,11 +368,11 @@ def main():
                 
                 if result.returncode == 0:
                     print("\n" + "=" * 70)
-                    print("✅ ALL MODEL VALIDATION TESTS PASSED")
+                    print("[SUCCESS] ALL MODEL VALIDATION TESTS PASSED")
                     print("=" * 70)
                 else:
                     print("\n" + "=" * 70)
-                    print("⚠️  SOME MODEL VALIDATION TESTS FAILED")
+                    print("[WARNING] SOME MODEL VALIDATION TESTS FAILED")
                     print("=" * 70)
                     print(f"Exit code: {result.returncode}")
                 
@@ -356,13 +391,13 @@ def main():
                 
                 print(f"\nTest results saved to: {test_results_file}")
             else:
-                print(f"\n⚠️  Test directory not found: {test_dir}")
+                print(f"\n[WARNING] Test directory not found: {test_dir}")
                 print("   Skipping automatic validation tests.")
                 
         except subprocess.TimeoutExpired:
-            print("\n⚠️  Test execution timed out after 5 minutes.")
+            print("\n[WARNING] Test execution timed out after 5 minutes.")
         except Exception as e:
-            print(f"\n⚠️  Error running validation tests: {str(e)}")
+            print(f"\n[WARNING] Error running validation tests: {str(e)}")
             print("   Continuing without test results...")
         
         # ================================================================
@@ -397,22 +432,22 @@ def main():
                 
                 if result.returncode == 0:
                     print("\n" + "=" * 70)
-                    print("✅ MODEL COMPARISON COMPLETED")
+                    print("[SUCCESS] MODEL COMPARISON COMPLETED")
                     print("=" * 70)
                     print("Comparison plots saved to: runs/latest/comparison/")
                 else:
                     print("\n" + "=" * 70)
-                    print("⚠️  MODEL COMPARISON HAD ISSUES")
+                    print("[WARNING] MODEL COMPARISON HAD ISSUES")
                     print("=" * 70)
                     print(f"Exit code: {result.returncode}")
             else:
-                print(f"\n⚠️  Comparison script not found: {compare_script}")
+                print(f"\n[WARNING] Comparison script not found: {compare_script}")
                 print("   Skipping model comparison.")
                 
         except subprocess.TimeoutExpired:
-            print("\n⚠️  Model comparison timed out after 2 minutes.")
+            print("\n[WARNING] Model comparison timed out after 2 minutes.")
         except Exception as e:
-            print(f"\n⚠️  Error running model comparison: {str(e)}")
+            print(f"\n[WARNING] Error running model comparison: {str(e)}")
             print("   Continuing without comparison...")
         
         # ================================================================
@@ -440,18 +475,18 @@ def main():
                     print("Performance summary warnings:")
                     print(result.stderr)
             else:
-                print("⚠️  Performance script not found. Skipping summary.")
+                print("[WARNING] Performance script not found. Skipping summary.")
                 
         except Exception as e:
-            print(f"⚠️  Error showing performance: {str(e)}")
+            print(f"[WARNING] Error showing performance: {str(e)}")
     else:
-        print("\n⚠️  No successful models to validate. Skipping tests and comparison.")
+        print("\n[WARNING] No successful models to validate. Skipping tests and comparison.")
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user. Some models may still be running.")
+        print("\n\n[WARNING] Interrupted by user. Some models may still be running.")
         sys.exit(1)
 

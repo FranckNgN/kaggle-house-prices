@@ -97,13 +97,13 @@ RANDOM_FOREST = {
         "criterion": "mse",
     },
     "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
+        "n_trials": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "random_state": 42,
     },
     "optuna_space": {
-        "n_estimators": (100, 1000),
-        "max_depth": (3, 20),
+        "n_estimators": (50, 300),  # Reduced from (100, 1000) for faster training
+        "max_depth": (3, 15),  # Reduced from (3, 20)
         "min_samples_split": (2, 20),
         "min_samples_leaf": (1, 10),
         "max_features": (0.1, 1.0),
@@ -120,8 +120,8 @@ SVR = {
         "kernel": "rbf",
     },
     "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
+        "n_trials": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "random_state": 42,
     },
     "optuna_space": {
@@ -148,7 +148,7 @@ XGBOOST = {
     },
     # Hyperparameter search space
     "param_dist": {
-        "n_estimators": [800, 1000, 1200],
+        "n_estimators": [300, 400, 500],  # Reduced from [800, 1000, 1200] for faster training
         "learning_rate": [0.05, 0.04, 0.03],
         "max_depth": [3, 4, 5],
         "subsample": [0.8, 1.0],
@@ -156,24 +156,24 @@ XGBOOST = {
     },
     # RandomizedSearchCV parameters
     "search": {
-        "n_iter": 30,
+        "n_iter": 10,  # Reduced from 30 to 10 for faster training
         "scoring": "neg_mean_squared_error",
-        "cv": 5,
+        "cv": 3,  # Reduced from 5 to 3 for faster training
         "n_jobs": -1,
         "verbose": 2,
         "random_state": 42,
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
+        "n_trials": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "n_estimators": (500, 2000),
+        "n_estimators": (200, 600),  # Reduced from (500, 2000) for faster training
         "learning_rate": (0.01, 0.1, "log"),
-        "max_depth": (3, 9),
+        "max_depth": (3, 7),  # Reduced from (3, 9)
         "subsample": (0.6, 1.0),
         "colsample_bytree": (0.6, 1.0),
         "min_child_weight": (1, 10),
@@ -199,32 +199,32 @@ LIGHTGBM = {
         "num_leaves": [31, 63],
         "max_depth": [5, 7, -1],  # -1 means no limit
         "learning_rate": [0.05, 0.04, 0.03],
-        "n_estimators": [800, 1000, 1200],
+        "n_estimators": [300, 400, 500],  # Reduced from [800, 1000, 1200] for faster training
         "subsample": [0.8, 1.0],
         "colsample_bytree": [0.7, 0.9],
         "min_child_samples": [10, 20],
     },
     # RandomizedSearchCV parameters
     "search": {
-        "n_iter": 30,
+        "n_iter": 10,  # Reduced from 30 to 10 for faster training
         "scoring": "neg_mean_squared_error",
-        "cv": 5,
+        "cv": 3,  # Reduced from 5 to 3 for faster training
         "n_jobs": -1,
         "verbose": 2,
         "random_state": 42,
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 50,
-        "n_splits": 5,
+        "n_trials": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "n_estimators": (500, 2000),
+        "n_estimators": (200, 600),  # Reduced from (500, 2000) for faster training
         "learning_rate": (0.01, 0.1, "log"),
-        "num_leaves": (20, 150),
-        "max_depth": (3, 12),
+        "num_leaves": (20, 100),  # Reduced from (20, 150)
+        "max_depth": (3, 8),  # Reduced from (3, 12)
         "subsample": (0.6, 1.0),
         "colsample_bytree": (0.6, 1.0),
         "min_child_samples": (5, 50),
@@ -244,7 +244,7 @@ CATBOOST = {
         "loss_function": "RMSE",
         "learning_rate": 0.03,
         "depth": 6,
-        "iterations": 2000,
+        "iterations": 500,  # Reduced from 2000 to 500 for faster training
         "random_seed": 42,
         "verbose": 0,  # Set >0 for training logs
         "thread_count": -1,
@@ -257,22 +257,22 @@ CATBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 30,
-        "n_splits": 5,
+        "n_trials": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "iterations": (1000, 3000),
+        "iterations": (300, 800),  # Reduced from (1000, 3000) for faster training
         "learning_rate": (0.01, 0.1, "log"),
-        "depth": (4, 10),
+        "depth": (4, 8),  # Reduced from (4, 10)
         "l2_leaf_reg": (1, 10),
         "bagging_temperature": (0, 1),
         "random_strength": (0, 1),
     },
     # Cross-validation settings
     "cv": {
-        "n_splits": 5,
+        "n_splits": 3,  # Reduced from 5 to 3 for faster training
         "shuffle": True,
         "random_state": 42,
     },

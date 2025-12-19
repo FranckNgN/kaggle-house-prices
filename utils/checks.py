@@ -48,12 +48,12 @@ def print_error(message: str, error_type: str = "ERROR") -> None:
 
 def print_warning(message: str) -> None:
     """Print warning message."""
-    print(f"{Fore.YELLOW}⚠️  WARNING: {message}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[WARNING] {message}{Style.RESET_ALL}")
 
 
 def print_success(message: str) -> None:
     """Print success message."""
-    print(f"{Fore.GREEN}✅ {message}{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[SUCCESS] {message}{Style.RESET_ALL}")
 
 
 # ============================================================================
@@ -679,7 +679,7 @@ def validate_preprocessing_stage(
             if stop_on_error:
                 raise DataIntegrityError(f"Stage {stage_num} validation failed with {len(errors)} error(s)")
         else:
-            print(f"{Fore.GREEN}✅ ALL CHECKS PASSED for {stage_name}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}[SUCCESS] ALL CHECKS PASSED for {stage_name}{Style.RESET_ALL}")
         
         if warnings_list:
             print(f"\n{Fore.YELLOW}Warnings ({len(warnings_list)}):{Style.RESET_ALL}")
@@ -704,7 +704,7 @@ def validate_preprocessing_stage(
 def check() -> None:
     """Legacy check function - calls comprehensive validation."""
     if cfg is None:
-        print("⚠️  config_local not available. Skipping checks.")
+        print("[WARNING] config_local not available. Skipping checks.")
         return
     
     print("Running comprehensive preprocessing checks...")
@@ -716,9 +716,9 @@ def check() -> None:
         print(f"\n--- Stage {stage} Results ---")
         for key, value in results.items():
             if key.endswith('_error'):
-                print(f"  ❌ {key}: {value}")
+                print(f"  [FAILED] {key}: {value}")
             elif isinstance(value, bool):
-                status = "✅" if value else "❌"
+                status = "[PASS]" if value else "[FAIL]"
                 print(f"  {status} {key}")
 
 
