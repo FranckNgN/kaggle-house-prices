@@ -1,2 +1,7 @@
 timestamp,model,rmse,hyperparams,feat_hash,feat_count,notes
 2025-12-18 20:12:51,ridge,20396.010639,"{""alpha"": 12}",f796319e,264,GridSearchCV optimized
+2025-12-19 11:30:11,xgboost,0.133475,"{""device"": ""cuda"", ""eval_metric"": ""rmse"", ""n_jobs"": -1, ""objective"": ""reg:squarederror"", ""random_state"": 42, ""tree_method"": ""hist""}",f796319e,264,Base model for Stacking
+2025-12-19 11:30:22,lasso,24878.845905,"{""alpha"": 0.01}",f796319e,264,GridSearchCV optimized
+2025-12-19 11:31:01,svr,0.156006,"{""C"": 9.12176658736022, ""epsilon"": 0.024369215373976755, ""gamma"": 0.00029274007818828906, ""kernel"": ""rbf""}",f796319e,264,Optuna Optimized
+2025-12-19 11:33:27,lightgbm,0.125999,"{""device_type"": ""gpu"", ""n_jobs"": -1, ""objective"": ""regression"", ""random_state"": 42}",f796319e,264,Base model for Stacking
+2025-12-19 11:36:21,random_forest,0.132964,"{""criterion"": ""mse"", ""max_depth"": 15, ""max_features"": 0.24253624636800145, ""min_samples_leaf"": 1, ""min_samples_split"": 4, ""n_estimators"": 569, ""n_jobs"": -1, ""random_state"": 42}",f796319e,264,Optuna Optimized

@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
-Run all model training scripts in parallel.
-Each model runs in a separate process to maximize CPU utilization.
+Run all model training scripts with hybrid strategy:
+- Linear models (0-4) run in parallel
+- Demanding models (5-11) run sequentially, one by one, in order
+
+This balances speed for fast models while preventing resource exhaustion
+for memory-intensive models like XGBoost, CatBoost, and Stacking.
 """
 import sys
 import subprocess
@@ -29,7 +33,7 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
         Dictionary with execution results
     """
     model_name = script_path.stem
-    print(f"[STARTING] {model_name}")
+    print(f"[STARTING] {model_name}", flush=True)
     
     start_time = time.time()
     
@@ -55,7 +59,7 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
         elapsed_time = time.time() - start_time
         
         if result.returncode == 0:
-            print(f"[SUCCESS] {model_name} completed in {elapsed_time:.1f}s")
+            print(f"[SUCCESS] {model_name} completed in {elapsed_time:.1f}s", flush=True)
             return {
                 "model": model_name,
                 "status": "success",
@@ -64,7 +68,7 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
                 "stderr": result.stderr
             }
         else:
-            print(f"[FAILED] {model_name} failed after {elapsed_time:.1f}s")
+            print(f"[FAILED] {model_name} failed after {elapsed_time:.1f}s", flush=True)
             return {
                 "model": model_name,
                 "status": "failed",
@@ -76,7 +80,7 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
             
     except subprocess.TimeoutExpired:
         elapsed_time = time.time() - start_time
-        print(f"[TIMEOUT] {model_name} exceeded 1 hour timeout")
+        print(f"[TIMEOUT] {model_name} exceeded 1 hour timeout", flush=True)
         return {
             "model": model_name,
             "status": "timeout",
@@ -84,7 +88,7 @@ def run_model_script(script_path: Path, enable_validation: bool = True) -> dict:
         }
     except Exception as e:
         elapsed_time = time.time() - start_time
-        print(f"[ERROR] {model_name} raised exception: {str(e)}")
+        print(f"[ERROR] {model_name} raised exception: {str(e)}", flush=True)
         return {
             "model": model_name,
             "status": "error",
@@ -102,29 +106,61 @@ def get_model_scripts() -> list:
     return scripts
 
 
+def categorize_models(scripts: list) -> tuple:
+    """
+    Categorize models into linear (fast) and demanding (slow) models.
+    
+    Returns:
+        (linear_models, demanding_models) - both sorted by number
+    """
+    linear_models = []  # Models 0-4: linear, ridge, lasso, elastic net
+    demanding_models = []  # Models 5-11: RF, SVR, XGBoost, LightGBM, CatBoost, blending, stacking
+    
+    for script in scripts:
+        model_num = int(script.name[0]) if script.name[0].isdigit() else 99
+        if model_num <= 4:
+            linear_models.append(script)
+        else:
+            demanding_models.append(script)
+    
+    return linear_models, demanding_models
+
+
 def main():
     """Main execution function."""
     print("=" * 70)
-    print("PARALLEL MODEL TRAINING")
+    print("HYBRID MODEL TRAINING")
+    print("=" * 70)
+    print("Strategy: Linear models in parallel, then demanding models sequentially")
     print("=" * 70)
     
     # Get all model scripts
-    model_scripts = get_model_scripts()
+    all_scripts = get_model_scripts()
     
-    if not model_scripts:
+    if not all_scripts:
         print("No model scripts found!")
         return
     
-    print(f"\nFound {len(model_scripts)} model scripts:")
-    for script in model_scripts:
-        print(f"  - {script.name}")
+    # Categorize models
+    linear_models, demanding_models = categorize_models(all_scripts)
+    
+    print(f"\nFound {len(all_scripts)} model scripts:")
+    print(f"\n  Linear models (will run in parallel): {len(linear_models)}")
+    for script in linear_models:
+        print(f"    - {script.name}")
+    
+    print(f"\n  Demanding models (will run sequentially): {len(demanding_models)}")
+    for script in demanding_models:
+        print(f"    - {script.name}")
     
     # Check for --yes flag to skip confirmation
     skip_confirmation = '--yes' in sys.argv or '-y' in sys.argv
     
     if not skip_confirmation:
         # Ask for confirmation
-        print(f"\nThis will run {len(model_scripts)} models in parallel.")
+        print(f"\nThis will:")
+        print(f"  1. Run {len(linear_models)} linear models in parallel")
+        print(f"  2. Then run {len(demanding_models)} demanding models one by one")
         print("Note: This may use significant CPU/memory resources.")
         try:
             response = input("Continue? (y/n): ").strip().lower()
@@ -135,38 +171,81 @@ def main():
             # Non-interactive mode, proceed automatically
             print("Non-interactive mode detected. Proceeding...")
     else:
-        print(f"\nRunning {len(model_scripts)} models in parallel (--yes flag detected)...")
-    
-    # Determine number of parallel workers
-    # Use number of models or CPU count, whichever is smaller
-    max_workers = min(len(model_scripts), os.cpu_count() or 4)
-    print(f"\nRunning with {max_workers} parallel workers...")
-    print("=" * 70)
+        print(f"\nRunning models (--yes flag detected)...")
     
     start_time = time.time()
     results = []
     
-    # Run models in parallel
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
-        future_to_model = {
-            executor.submit(run_model_script, script): script.stem
-            for script in model_scripts
-        }
+    # ================================================================
+    # PHASE 1: Run all linear models in parallel
+    # ================================================================
+    if linear_models:
+        print("\n" + "=" * 70)
+        print("PHASE 1: RUNNING LINEAR MODELS IN PARALLEL")
+        print("=" * 70)
         
-        # Process completed tasks as they finish
-        for future in as_completed(future_to_model):
-            model_name = future_to_model[future]
+        max_workers = min(len(linear_models), os.cpu_count() or 4)
+        print(f"Running {len(linear_models)} linear models with {max_workers} parallel workers...")
+        print("-" * 70, flush=True)
+        
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all linear model tasks
+            future_to_model = {
+                executor.submit(run_model_script, script): script.stem
+                for script in linear_models
+            }
+            
+            print(f"[INFO] {len(future_to_model)} linear models submitted.", flush=True)
+            
+            # Process completed tasks as they finish
+            completed_count = 0
+            for future in as_completed(future_to_model):
+                model_name = future_to_model[future]
+                completed_count += 1
+                
+                try:
+                    result = future.result()
+                    results.append(result)
+                    remaining = len(linear_models) - completed_count
+                    if remaining > 0:
+                        print(f"[PROGRESS] {completed_count}/{len(linear_models)} linear models completed. {remaining} remaining.", flush=True)
+                except Exception as e:
+                    print(f"[EXCEPTION] {model_name}: {str(e)}", flush=True)
+                    results.append({
+                        "model": model_name,
+                        "status": "exception",
+                        "error": str(e)
+                    })
+        
+        print(f"\n[PHASE 1 COMPLETE] All {len(linear_models)} linear models finished.", flush=True)
+    
+    # ================================================================
+    # PHASE 2: Run demanding models sequentially, one by one
+    # ================================================================
+    if demanding_models:
+        print("\n" + "=" * 70)
+        print("PHASE 2: RUNNING DEMANDING MODELS SEQUENTIALLY")
+        print("=" * 70)
+        print(f"Running {len(demanding_models)} demanding models one by one in order...")
+        print("-" * 70, flush=True)
+        
+        for idx, script in enumerate(demanding_models, 1):
+            model_name = script.stem
+            print(f"\n[{idx}/{len(demanding_models)}] Starting: {model_name}", flush=True)
+            
             try:
-                result = future.result()
+                result = run_model_script(script)
                 results.append(result)
+                print(f"[{idx}/{len(demanding_models)}] Completed: {model_name}", flush=True)
             except Exception as e:
-                print(f"[EXCEPTION] {model_name}: {str(e)}")
+                print(f"[EXCEPTION] {model_name}: {str(e)}", flush=True)
                 results.append({
                     "model": model_name,
                     "status": "exception",
                     "error": str(e)
                 })
+        
+        print(f"\n[PHASE 2 COMPLETE] All {len(demanding_models)} demanding models finished.", flush=True)
     
     total_time = time.time() - start_time
     
