@@ -1,85 +1,84 @@
-# Kaggle Submission Scripts
+# Scripts Directory
 
-This directory contains scripts for submitting models to Kaggle and checking leaderboard rankings.
+This directory contains utility scripts for running models, submitting to Kaggle, and managing the project.
 
-## Setup
+## Virtual Environment Usage
 
-1. **Install Kaggle API:**
-   ```bash
-   pip install kaggle
-   ```
+All scripts are designed to run in a virtual environment. The system will automatically use the venv Python interpreter when available.
 
-2. **Configure Kaggle credentials:**
-   - Download your `kaggle.json` from [Kaggle Account Settings](https://www.kaggle.com/account)
-   - Place it in `.kaggle/kaggle.json` in the project root
+### Setup (One-time)
 
-## Scripts
-
-### 1. `submit_to_kaggle.py` - Single Model Submission
-
-Submit a single model file to Kaggle.
-
-**Usage:**
-```bash
-python scripts/submit_to_kaggle.py <submission_file.csv> [message]
+**Windows (PowerShell):**
+```powershell
+.\setup_venv.ps1
 ```
 
-**Examples:**
+**Linux/Mac:**
 ```bash
-# Submit ElasticNet model
-python scripts/submit_to_kaggle.py data/submissions/elasticNetModel.csv "ElasticNet - alpha=0.0007"
-
-# Submit Ridge model
-python scripts/submit_to_kaggle.py data/submissions/ridgeModel.csv "Ridge - alpha=8"
+chmod +x setup_venv.sh
+./setup_venv.sh
 ```
 
-### 2. `submit_all_models.py` - Interactive Submission Manager
+### Automatic venv Detection
 
-Interactive script to submit models one by one or all at once.
+When running Python scripts, the system automatically:
+1. Checks for `.venv` directory
+2. Uses `.venv/Scripts/python.exe` (Windows) or `.venv/bin/python` (Linux/Mac)
+3. Falls back to system Python if venv not found
 
-**Usage:**
-```bash
-python scripts/submit_all_models.py
+### Manual Activation
+
+If you want to manually activate the venv:
+
+**Windows (PowerShell):**
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
-**Features:**
-- View all available submission files
-- Submit a single model (with selection menu)
-- Submit all models at once
-- View submission history
-- Automatic leaderboard checking after each submission
-- Summary of all submissions with rankings
+**Linux/Mac:**
+```bash
+source .venv/bin/activate
+```
 
-**Menu Options:**
-1. **Submit a single model** - Choose from available files
-2. **Submit all models** - Batch submit all CSV files
-3. **View available submissions** - List all submission files
-4. **View submission history** - See past submissions and results
-5. **Exit** - Quit the script
+## Available Scripts
 
-## Features
+### Model Execution
 
-- ✅ Automatic submission to Kaggle
-- ✅ Leaderboard ranking retrieval
-- ✅ Score comparison with previous best
-- ✅ Submission history logging
-- ✅ Batch submission support
-- ✅ Interactive model selection
+- **`run_all_models_parallel.py`**: Run multiple models in parallel
+  ```bash
+  python scripts/run_all_models_parallel.py
+  ```
 
-## Submission Log
+### Kaggle Submission
 
-All submissions are logged to `data/submissions/submission_log.json` with:
-- Timestamp
-- File name
-- Submission message
-- Rank
-- Score (RMSLE)
-- Total submissions count
+- **`submit_to_kaggle.py`**: Submit a single model to Kaggle
+  ```bash
+  python scripts/submit_to_kaggle.py data/submissions/model.csv "Message"
+  ```
+
+- **`submit_all_models_auto.py`**: Submit all available models (with duplicate detection)
+  ```bash
+  python scripts/submit_all_models_auto.py
+  ```
+
+- **`get_kaggle_score.py`**: Retrieve and log latest Kaggle score
+  ```bash
+  python scripts/get_kaggle_score.py xgboost
+  ```
+
+- **`check_submission_status.py`**: View submission history and status
+  ```bash
+  python scripts/check_submission_status.py
+  ```
+
+### Analysis & Comparison
+
+- **`show_performance.py`**: Display model performance metrics
+- **`compare_models.py`**: Compare different model predictions
+- **`check_model_progress.py`**: Check which models have been run
 
 ## Notes
 
-- The script waits 5-8 seconds after submission before checking leaderboard
-- Retries up to 3-5 times if leaderboard check fails
-- 10-second delay between batch submissions to avoid rate limiting
-- Make sure your submission files are in `data/submissions/` directory
-
+- All scripts automatically use the virtual environment when available
+- PYTHONPATH is automatically set to include the project root
+- Scripts check for duplicate submissions to optimize Kaggle daily limit (10/day)

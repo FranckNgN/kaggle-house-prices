@@ -18,18 +18,28 @@ This project implements a comprehensive 6-stage preprocessing pipeline followed 
 
 ### Installation
 
+**Windows (PowerShell):**
+```powershell
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/kaggle-house-prices.git
+cd kaggle-house-prices
+
+# Setup virtual environment (one-time)
+.\setup_venv.ps1
+```
+
+**Linux/Mac:**
 ```bash
 # Clone the repository
 git clone https://github.com/YOUR_USERNAME/kaggle-house-prices.git
 cd kaggle-house-prices
 
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Setup virtual environment (one-time)
+chmod +x setup_venv.sh
+./setup_venv.sh
 ```
+
+**Note:** All Python scripts automatically use the virtual environment when available. You don't need to manually activate it.
 
 ### Configuration
 
