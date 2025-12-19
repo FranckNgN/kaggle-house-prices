@@ -163,10 +163,21 @@ if __name__ == "__main__":
     # Final predictions
     print("Generating final predictions...")
     final_pred_log = meta_model.predict(oof_test)
+    
+    # Validate predictions
+    from utils.model_wrapper import (
+        validate_predictions_wrapper,
+        validate_submission_wrapper
+    )
+    validate_predictions_wrapper(final_pred_log, "Stacking", target_is_log=True)
+    
     final_pred_real = np.expm1(final_pred_log)
 
     submission = load_sample_submission()
     submission["SalePrice"] = final_pred_real
+
+    # Validate submission format and ID matching
+    validate_submission_wrapper(submission, len(oof_test), "Stacking", test_ids=submission["Id"])
 
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)

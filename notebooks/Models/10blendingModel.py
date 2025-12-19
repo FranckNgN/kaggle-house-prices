@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict
 
 from config_local import local_config, model_config
+from utils.model_wrapper import validate_submission_wrapper
 
 
 def load_predictions(cfg: dict) -> Dict[str, pd.DataFrame]:
@@ -101,6 +102,9 @@ def main() -> None:
     
     # Blend predictions
     blend = blend_predictions(predictions, cfg["weights"])
+    
+    # Validate submission format and ID matching
+    validate_submission_wrapper(blend, len(blend), "Blending", test_ids=blend["Id"])
     
     # Save blended file
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])

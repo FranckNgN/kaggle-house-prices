@@ -10,6 +10,10 @@ from config_local import model_config
 from utils.optimization import run_optuna_study
 from utils.data import load_sample_submission
 from utils.metrics import log_model_result
+from utils.model_wrapper import (
+    validate_predictions_wrapper,
+    validate_submission_wrapper
+)
 
 
 if __name__ == "__main__":
@@ -54,10 +58,17 @@ if __name__ == "__main__":
 
     # Predict on Kaggle test set
     test_pred_log = best_model.predict(test.values)
+    
+    # Validate predictions
+    validate_predictions_wrapper(test_pred_log, "SVR", target_is_log=True)
+    
     test_pred_real = np.expm1(test_pred_log)
 
     submission = load_sample_submission()
     submission["SalePrice"] = test_pred_real
+
+    # Validate submission format and ID matching
+    validate_submission_wrapper(submission, len(test), "SVR", test_ids=submission["Id"])
 
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)

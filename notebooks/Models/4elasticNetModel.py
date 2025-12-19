@@ -10,6 +10,10 @@ from sklearn.metrics import mean_squared_error, make_scorer
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
+from utils.model_wrapper import (
+    validate_predictions_wrapper,
+    validate_submission_wrapper
+)
 
 
 def rmse_real(y_true_log, y_pred_log):
@@ -71,10 +75,17 @@ if __name__ == "__main__":
     best_model = grid.best_estimator_
     
     test_pred_log = best_model.predict(test)
+    
+    # Validate predictions
+    validate_predictions_wrapper(test_pred_log, "ElasticNet", target_is_log=True)
+    
     test_pred_real = np.expm1(test_pred_log)
 
     submission = load_sample_submission()
     submission["SalePrice"] = test_pred_real
+
+    # Validate submission format and ID matching
+    validate_submission_wrapper(submission, len(test), "ElasticNet", test_ids=submission["Id"])
 
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)
