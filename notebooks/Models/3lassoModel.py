@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+import time
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Lasso
@@ -53,7 +54,13 @@ if __name__ == "__main__":
         refit=cfg["refit"]
     )
 
+    # Start timing
+    start_time = time.time()
+    
     grid.fit(X, y)
+    
+    # Calculate runtime
+    runtime = time.time() - start_time
 
     best_alpha = grid.best_params_["alpha"]
     best_rmse_cv = -grid.best_score_
@@ -67,7 +74,8 @@ if __name__ == "__main__":
         rmse=best_rmse_cv,
         hyperparams={"alpha": best_alpha},
         features=X.columns.tolist(),
-        notes="GridSearchCV optimized"
+        notes="GridSearchCV optimized",
+        runtime=runtime
     )
 
     best_model = grid.best_estimator_

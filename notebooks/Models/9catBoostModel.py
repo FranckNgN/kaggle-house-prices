@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+import time
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
@@ -27,6 +28,9 @@ if __name__ == "__main__":
     cfg = model_config.CATBOOST
     opt_cfg = cfg["optuna_settings"]
     
+    # Start timing
+    start_time = time.time()
+    
     # Use Optuna for hyperparameter optimization
     print("Running Optuna optimization for CatBoost...")
     best_params, best_rmse = run_optuna_study(
@@ -39,6 +43,9 @@ if __name__ == "__main__":
         n_splits=opt_cfg["n_splits"],
         random_state=opt_cfg["random_state"]
     )
+    
+    # Calculate runtime
+    runtime = time.time() - start_time
 
     # Log results
     log_model_result(
@@ -46,7 +53,8 @@ if __name__ == "__main__":
         rmse=best_rmse,
         hyperparams={**cfg["base_params"], **best_params},
         features=X.columns.tolist(),
-        notes="Optuna Optimized"
+        notes="Optuna Optimized",
+        runtime=runtime
     )
 
     # Train final model with best params

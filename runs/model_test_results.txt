@@ -1,0 +1,16 @@
+MODEL VALIDATION TEST RESULTS
+======================================================================
+Exit code: 0
+Tests passed: True
+
+STDOUT:
+============================= test session starts =============================
+platform win32 -- Python 3.8.8, pytest-6.0.1, py-1.9.0, pluggy-0.13.1
+rootdir: D:\Project\Kaggle\house-prices-starter, configfile: pytest.ini
+collected 10 items
+
+tests\test_models\test_model_base.py ....                                [ 40%]
+tests\test_models\test_model_leakage.py ....                             [ 80%]
+tests\test_models\test_submission_files.py ..                            [100%]
+
+============================= 10 passed in 2.11s ==============================

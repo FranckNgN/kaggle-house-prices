@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
@@ -40,6 +41,9 @@ def get_base_model(model_name, params):
         raise ValueError(f"Unknown model: {model_name}")
 
 if __name__ == "__main__":
+    # Start timing for entire stacking process
+    start_time = time.time()
+    
     train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
     test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
 
@@ -147,6 +151,9 @@ if __name__ == "__main__":
     y_stack_pred = meta_model.predict(oof_train)
     stack_rmse = np.sqrt(mean_squared_error(y, y_stack_pred))
     print(f"\nStacking Meta-model OOF RMSE: {stack_rmse:.4f}")
+    
+    # Calculate total runtime for stacking
+    runtime = time.time() - start_time
 
     log_model_result(
         model_name="STACKING_META",
@@ -157,6 +164,7 @@ if __name__ == "__main__":
             "base_models": base_model_names
         },
         features=base_model_names,
+        runtime=runtime,
         notes=f"Full Stacking with {len(base_model_names)} models"
     )
     

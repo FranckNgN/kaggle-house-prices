@@ -1,0 +1,44 @@
+# Cursor IDE ignore file - hides files from explorer
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+**/*_out.ipynb
+
+# Data files (keep structure but hide large files)
+data/interim/oof/*.npy
+data/submissions/**/*.csv
+catboost_info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.temp
+.cache/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Compiled
+*.so
+*.egg-info/
+dist/
+build/
+

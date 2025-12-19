@@ -1,0 +1,87 @@
+MODEL TRAINING RESULTS
+======================================================================
+Total execution time: 53.8s
+Successful: 4/5
+
+
+0linearRegression: success
+  Time: 2.4s
+  Error:
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [LinearRegression] Predictions in log scale have suspicious range: min=10.88, max=224.06
+  warnings.warn(
+
+
+1linearRegUpdated: failed
+  Time: 16.4s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\1linearRegUpdated.py", line 74, in <module>
+    validate_submission_wrapper(submission, len(test), "LinearRegressionUpdated", test_ids=submission["Id"])
+  File "D:\Project\Kaggle\house-prices-starter\utils\model_wrapper.py", line 108, in validate_submission_wrapper
+    return validate_submission(submission, expected_test_size, model_name, test_ids)
+  File "D:\Project\Kaggle\house-prices-starter\utils\model_validation.py", line 149, in validate_submission
+    check_submission_format(submission, expected_test_size)
+  File "D:\Project\Kaggle\house-prices-starter\utils\checks.py", line 469, in check_submission_format
+    raise DataIntegrityError("Submission has non-positive SalePrice values")
+utils.checks.DataIntegrityError: Submission has non-positive SalePrice values
+
+
+2ridgeModel: success
+  Time: 18.1s
+  Error:
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [Ridge] Predictions in log scale have suspicious range: min=10.68, max=66.27
+  warnings.warn(
+
+
+3lassoModel: success
+  Time: 20.2s
+  Error:
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [Lasso] Predictions in log scale have suspicious range: min=10.95, max=87.68
+  warnings.warn(
+
+
+4elasticNetModel: success
+  Time: 53.7s
+  Error:
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [ElasticNet] Predictions in log scale have suspicious range: min=10.59, max=36.22
+  warnings.warn(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.06826194419535803, tolerance: 0.017984318163050586
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.29075088061310517, tolerance: 0.017984318163050586
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3553041003276789, tolerance: 0.018865872200340368
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.0203950066154346, tolerance: 0.018865872200340368
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.17514154582764174, tolerance: 0.019043454545344375
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.11031090155436729, tolerance: 0.01886202447492945
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3107291940588306, tolerance: 0.01886202447492945
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.12625790347109067, tolerance: 0.018865872200340368
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.1052863082923281, tolerance: 0.019043454545344375
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3218692565336978, tolerance: 0.01835586363498732
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.018083013316035235, tolerance: 0.017984318163050586
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.04134978385584276, tolerance: 0.017984318163050586
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 1.455310289942724, tolerance: 0.01886202447492945
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.032138256639484, tolerance: 0.019043454545344375
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 1.6138592069023234, tolerance: 0.01835586363498732
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.29773314893153024, tolerance: 0.019043454545344375
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.03765790947155523, tolerance: 0.018865872200340368
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.1127031991838883, tolerance: 0.01835586363498732
+  model = cd_fast.enet_coordinate_descent(
+C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.6796534981855515, tolerance: 0.01835586363498732
+  model = cd_fast.enet_coordinate_descent(
+

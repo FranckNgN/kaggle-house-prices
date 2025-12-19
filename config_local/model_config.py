@@ -97,13 +97,13 @@ RANDOM_FOREST = {
         "criterion": "mse",
     },
     "optuna_settings": {
-        "n_trials": 5,
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_trials": 50,  # Increased for thorough optimization (~20 min target)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
     "optuna_space": {
-        "n_estimators": (50, 300),  # Reduced from (100, 1000) for faster training
-        "max_depth": (3, 15),  # Reduced from (3, 20)
+        "n_estimators": (200, 1000),  # Increased range for better optimization
+        "max_depth": (3, 20),  # Full depth range
         "min_samples_split": (2, 20),
         "min_samples_leaf": (1, 10),
         "max_features": (0.1, 1.0),
@@ -120,8 +120,8 @@ SVR = {
         "kernel": "rbf",
     },
     "optuna_settings": {
-        "n_trials": 5,
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_trials": 40,  # Increased for thorough optimization (~20 min target)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
     "optuna_space": {
@@ -165,15 +165,15 @@ XGBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 5,
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_trials": 40,  # Increased for thorough optimization (~20 min target)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "n_estimators": (200, 600),  # Reduced from (500, 2000) for faster training
+        "n_estimators": (500, 2000),  # Increased range for better optimization
         "learning_rate": (0.01, 0.1, "log"),
-        "max_depth": (3, 7),  # Reduced from (3, 9)
+        "max_depth": (3, 9),  # Full depth range
         "subsample": (0.6, 1.0),
         "colsample_bytree": (0.6, 1.0),
         "min_child_weight": (1, 10),
@@ -215,16 +215,16 @@ LIGHTGBM = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 5,
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_trials": 40,  # Increased for thorough optimization (~20 min target)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "n_estimators": (200, 600),  # Reduced from (500, 2000) for faster training
+        "n_estimators": (500, 2000),  # Increased range for better optimization
         "learning_rate": (0.01, 0.1, "log"),
-        "num_leaves": (20, 100),  # Reduced from (20, 150)
-        "max_depth": (3, 8),  # Reduced from (3, 12)
+        "num_leaves": (20, 150),  # Full range
+        "max_depth": (3, 12),  # Full depth range
         "subsample": (0.6, 1.0),
         "colsample_bytree": (0.6, 1.0),
         "min_child_samples": (5, 50),
@@ -244,7 +244,7 @@ CATBOOST = {
         "loss_function": "RMSE",
         "learning_rate": 0.03,
         "depth": 6,
-        "iterations": 500,  # Reduced from 2000 to 500 for faster training
+        "iterations": 1500,  # Increased for better optimization
         "random_seed": 42,
         "verbose": 0,  # Set >0 for training logs
         "thread_count": -1,
@@ -257,22 +257,22 @@ CATBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 5,
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_trials": 30,  # Increased for thorough optimization (~20 min target)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "iterations": (300, 800),  # Reduced from (1000, 3000) for faster training
+        "iterations": (800, 2500),  # Increased range for better optimization
         "learning_rate": (0.01, 0.1, "log"),
-        "depth": (4, 8),  # Reduced from (4, 10)
+        "depth": (4, 10),  # Full depth range
         "l2_leaf_reg": (1, 10),
         "bagging_temperature": (0, 1),
         "random_strength": (0, 1),
     },
     # Cross-validation settings
     "cv": {
-        "n_splits": 3,  # Reduced from 5 to 3 for faster training
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "shuffle": True,
         "random_state": 42,
     },

@@ -15,13 +15,13 @@ Run the setup script to create and configure the virtual environment:
 
 **Windows:**
 ```powershell
-.\setup_venv.ps1
+.\scripts\setup\setup_venv.ps1
 ```
 
 **Linux/Mac:**
 ```bash
-chmod +x setup_venv.sh
-./setup_venv.sh
+chmod +x scripts/setup/setup_venv.sh
+./scripts/setup/setup_venv.sh
 ```
 
 This will:
