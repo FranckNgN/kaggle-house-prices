@@ -297,7 +297,7 @@ def check_feature_engineering_sanity(
     # Check for negative values where they shouldn't exist
     # Note: After Yeo-Johnson transformation (stage 3), some area features may have negative values
     # This is expected behavior for the transformation, so we skip this check for stage 4+
-    if "Stage 4" in stage_name or "Stage 5" in stage_name or "Stage 6" in stage_name or "Stage 7" in stage_name:
+    if "Stage 4" in stage_name or "Stage 5" in stage_name or "Stage 6" in stage_name or "Stage 7" in stage_name or "Stage 8" in stage_name:
         # After transformations, negative values are acceptable for transformed features
         # Only check for extreme outliers or infinite values
         area_cols = [c for c in train_df.columns if 'SF' in c or 'Area' in c or 'Size' in c]
