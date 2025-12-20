@@ -10,6 +10,7 @@ from catboost import CatBoostRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from typing import Dict, Any, Callable
+from utils.cv_strategy import get_cv_strategy
 
 
 class ProgressCallback:
@@ -63,7 +64,8 @@ def run_optuna_study(
     n_trials: int = 100,
     n_splits: int = 5,
     random_state: int = 42,
-    show_progress: bool = True
+    show_progress: bool = True,
+    cv_strategy: str = "stratified"
 ) -> Dict[str, Any]:
     """
     Run an Optuna study to find best hyperparameters.
@@ -111,9 +113,27 @@ def run_optuna_study(
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
             
-        # 5-Fold Cross Validation
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-        scores = cross_val_score(model, X, y, cv=kf, scoring="neg_root_mean_squared_error")
+        # Cross Validation with specified strategy
+        if cv_strategy == "stratified":
+            cv_splits = get_cv_strategy(
+                strategy="stratified",
+                y=y,
+                n_splits=n_splits,
+                random_state=random_state
+            )
+            # cross_val_score doesn't work directly with list of splits, so we compute manually
+            scores = []
+            for train_idx, val_idx in cv_splits:
+                X_train_fold, X_val_fold = X[train_idx], X[val_idx]
+                y_train_fold, y_val_fold = y[train_idx], y[val_idx]
+                model.fit(X_train_fold, y_train_fold)
+                y_pred = model.predict(X_val_fold)
+                rmse = np.sqrt(np.mean((y_val_fold - y_pred) ** 2))
+                scores.append(-rmse)  # Negative for consistency with cross_val_score
+            scores = np.array(scores)
+        else:
+            kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            scores = cross_val_score(model, X, y, cv=kf, scoring="neg_root_mean_squared_error")
         
         return -np.mean(scores)
 
@@ -130,6 +150,7 @@ def run_optuna_study(
     print(f"Starting Optuna optimization for {model_type}")
     print(f"  Trials: {n_trials}")
     print(f"  CV Folds: {n_splits}")
+    print(f"  CV Strategy: {cv_strategy}")
     print(f"  Total model fits: {n_trials * n_splits}")
     print(f"{'='*70}")
     

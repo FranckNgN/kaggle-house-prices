@@ -5,7 +5,6 @@ import os
 import time
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
@@ -18,6 +17,7 @@ from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
 from utils.metrics import log_model_result
+from utils.cv_strategy import get_cv_strategy
 
 def get_base_model(model_name, params):
     """Factory for creating base models."""
@@ -60,10 +60,14 @@ if __name__ == "__main__":
     test_mtime = os.path.getmtime(local_config.TEST_PROCESS8_CSV)
     latest_input_mtime = max(train_mtime, test_mtime)
 
-    kf = KFold(
+    # Use stratified CV based on target quantiles for better distribution matching
+    print("Using stratified CV based on target quantiles...")
+    cv_splits = get_cv_strategy(
+        strategy="stratified",
+        y=y,
         n_splits=cfg["cv_n_splits"],
-        shuffle=cfg["cv_shuffle"],
-        random_state=cfg["cv_random_state"]
+        random_state=cfg["cv_random_state"],
+        n_bins=10
     )
 
     # To store OOF predictions (features for meta-model)
@@ -99,7 +103,7 @@ if __name__ == "__main__":
             # Temporary storage for test predictions across folds
             test_preds_fold = np.zeros((X_test.shape[0], cfg["cv_n_splits"]))
 
-            for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
+            for fold, (train_idx, val_idx) in enumerate(cv_splits):
                 print(f"    - Processing fold {fold+1}/{cfg['cv_n_splits']}...", end="\r")
                 X_train, X_val = X[train_idx], X[val_idx]
                 y_train, y_val = y[train_idx], y[val_idx]

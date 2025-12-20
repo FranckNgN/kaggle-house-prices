@@ -293,11 +293,11 @@ BLENDING = {
     "submission_name": "10_blending",
     "submission_filename": "blend_xgb_lgb_cat_Model.csv",
     # Dictionary mapping model name to its CSV filename
+    # NOTE: Ridge removed due to poor Kaggle correlation (CV-Kaggle gap >1.0)
     "models": {
         "xgb": XGBOOST["submission_filename"],
         "lgb": LIGHTGBM["submission_filename"],
         "cat": CATBOOST["submission_filename"],
-        "ridge": RIDGE["submission_filename"],
         "lasso": LASSO["submission_filename"],
         "elasticNet": ELASTIC_NET["submission_filename"],
         "rf": RANDOM_FOREST["submission_filename"],
@@ -308,7 +308,6 @@ BLENDING = {
         "xgb": 2.0,
         "lgb": 0.5,
         "cat": 1.0,
-        "ridge": 0.0,
         "lasso": 0.0,
         "elasticNet": 0.0,
         "rf": 0.0,
@@ -323,11 +322,11 @@ STACKING = {
     "submission_name": "11_stacking",
     "submission_filename": "stacking_submission.csv",
     # Base models to use for stacking (must match names in configs)
+    # NOTE: Ridge removed due to poor Kaggle correlation (CV-Kaggle gap >1.0)
     "base_models": [
         "xgboost", 
         "lightgbm", 
         "catboost", 
-        "ridge", 
         "lasso", 
         "elastic_net",
         "random_forest",

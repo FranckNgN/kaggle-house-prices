@@ -10,6 +10,31 @@ from config_local import local_config, model_config
 from utils.model_wrapper import validate_submission_wrapper
 
 
+def ensure_log_space(predictions: np.ndarray, model_name: str = "") -> np.ndarray:
+    """
+    Ensure predictions are in log space. Convert from real space if needed.
+    
+    Args:
+        predictions: Predictions array (may be in log or real space)
+        model_name: Optional model name for logging
+        
+    Returns:
+        Predictions in log space
+    """
+    # Check if predictions are in log space by comparing scale
+    # Log space predictions typically have mean < 15 (log1p of prices)
+    # Real space predictions typically have mean > 1000 (actual prices)
+    if predictions.mean() > 1000 or predictions.max() > 1000:
+        if model_name:
+            print(f"  Converting {model_name} predictions from real space to log space...")
+        else:
+            print("  Converting predictions from real space to log space...")
+        # Clip negative values before log1p to avoid issues
+        predictions = np.clip(predictions, 0, None)
+        return np.log1p(predictions)
+    return predictions
+
+
 def load_oof_predictions(cfg: dict) -> Optional[Dict[str, np.ndarray]]:
     """Load out-of-fold predictions if available."""
     oof_predictions = {}
@@ -17,7 +42,7 @@ def load_oof_predictions(cfg: dict) -> Optional[Dict[str, np.ndarray]]:
         "xgb": "xgboost",
         "lgb": "lightgbm", 
         "cat": "catboost",
-        "ridge": "ridge",
+        # "ridge": "ridge",  # Removed - poor Kaggle correlation
         "lasso": "lasso",
         "elasticNet": "elastic_net",
         "rf": "random_forest",
@@ -33,6 +58,31 @@ def load_oof_predictions(cfg: dict) -> Optional[Dict[str, np.ndarray]]:
     return oof_predictions if oof_predictions else None
 
 
+def ensure_log_space(predictions: np.ndarray, model_name: str = "") -> np.ndarray:
+    """
+    Ensure predictions are in log space. Convert from real space if needed.
+    
+    Args:
+        predictions: Predictions array (may be in log or real space)
+        model_name: Optional model name for logging
+        
+    Returns:
+        Predictions in log space
+    """
+    # Check if predictions are in log space by comparing scale
+    # Log space predictions typically have mean < 15 (log1p of prices)
+    # Real space predictions typically have mean > 1000 (actual prices)
+    if predictions.mean() > 1000 or predictions.max() > 1000:
+        if model_name:
+            print(f"  Converting {model_name} predictions from real space to log space...")
+        else:
+            print("  Converting predictions from real space to log space...")
+        # Clip negative values before log1p to avoid issues
+        predictions = np.clip(predictions, 0, None)
+        return np.log1p(predictions)
+    return predictions
+
+
 def optimize_blending_weights(
     predictions: Dict[str, np.ndarray],
     y_true: np.ndarray,
@@ -42,8 +92,10 @@ def optimize_blending_weights(
     """
     Find optimal weights for blending using scipy.optimize.
     
+    All predictions and y_true must be in log space.
+    
     Args:
-        predictions: Dictionary of model_name -> predictions array
+        predictions: Dictionary of model_name -> predictions array (should be in log space)
         y_true: True target values (in log space)
         initial_weights: Optional initial weights to start optimization
         method: Optimization method ('SLSQP', 'L-BFGS-B', or 'trust-constr')
@@ -54,14 +106,13 @@ def optimize_blending_weights(
     model_names = list(predictions.keys())
     n_models = len(model_names)
     
-    # Prepare prediction matrix
-    pred_matrix = np.column_stack([predictions[name] for name in model_names])
+    # Prepare prediction matrix and ensure all are in log space
+    pred_arrays = []
+    for name in model_names:
+        pred = ensure_log_space(predictions[name], model_name=name)
+        pred_arrays.append(pred)
     
-    # Ensure predictions are in log space (if they're in real space, convert)
-    # Check if predictions are in log space by comparing scale
-    if pred_matrix.mean() > 1000:  # Likely in real space
-        print("  Converting predictions from real space to log space...")
-        pred_matrix = np.log1p(pred_matrix)
+    pred_matrix = np.column_stack(pred_arrays)
     
     def objective(weights):
         """Objective function: RMSE of blended predictions."""
@@ -169,10 +220,20 @@ def validate_alignment(predictions: Dict[str, pd.DataFrame]) -> None:
 
 def blend_predictions(
     predictions: Dict[str, pd.DataFrame],
-    weights: Dict[str, float]
+    weights: Dict[str, float],
+    use_log_space: bool = True
 ) -> pd.DataFrame:
     """
     Blend predictions using weighted average.
+    
+    Args:
+        predictions: Dictionary of model_name -> DataFrame with SalePrice column
+        weights: Dictionary of model_name -> weight
+        use_log_space: If True, blend in log space then convert to real space.
+                      If False, blend directly in real space (legacy mode).
+    
+    Returns:
+        DataFrame with blended SalePrice in real space
     """
     # Use only models we successfully loaded
     active_model_names = list(predictions.keys())
@@ -190,14 +251,27 @@ def blend_predictions(
     first_name = active_model_names[0]
     blend = predictions[first_name].copy()
     
-    # Start SalePrice at zero to build the weighted sum
-    blend["SalePrice"] = 0.0
-    
-    # Weighted average
-    for name, pred in predictions.items():
-        weight = normalized_weights[name]
-        blend["SalePrice"] += weight * pred["SalePrice"]
-        print(f"  - Applied {name} with normalized weight: {weight:.4f}")
+    if use_log_space:
+        # CRITICAL: Blend in log space for consistency
+        # Convert all predictions to log space first
+        blend_log = 0.0
+        for name, pred_df in predictions.items():
+            weight = normalized_weights[name]
+            # Convert SalePrice to log space
+            sale_price = pred_df["SalePrice"].values
+            sale_price_log = ensure_log_space(sale_price, model_name=name)
+            blend_log += weight * sale_price_log
+            print(f"  - Applied {name} with normalized weight: {weight:.4f} (in log space)")
+        
+        # Convert back to real space
+        blend["SalePrice"] = np.expm1(blend_log)
+    else:
+        # Legacy mode: blend directly in real space
+        blend["SalePrice"] = 0.0
+        for name, pred_df in predictions.items():
+            weight = normalized_weights[name]
+            blend["SalePrice"] += weight * pred_df["SalePrice"]
+            print(f"  - Applied {name} with normalized weight: {weight:.4f} (in real space)")
     
     return blend
 
@@ -263,8 +337,46 @@ def main(optimize_weights: bool = True) -> None:
     print(f"\nBlending {len(predictions)} models...")
     print(f"Final weights: {cfg['weights']}")
     
-    # Blend predictions
-    blend = blend_predictions(predictions, cfg["weights"])
+    # Check if we have OOF predictions for test set blending
+    # If yes, we can blend OOF test predictions in log space (more accurate)
+    oof_test_predictions = {}
+    model_name_mapping = {
+        "xgb": "xgboost",
+        "lgb": "lightgbm", 
+        "cat": "catboost",
+        # "ridge": "ridge",  # Removed - poor Kaggle correlation
+        "lasso": "lasso",
+        "elasticNet": "elastic_net",
+        "rf": "random_forest",
+        "svr": "svr"
+    }
+    
+    # Try to load OOF test predictions (in log space)
+    for blend_name, model_name in model_name_mapping.items():
+        if blend_name in predictions:  # Only check models we're actually using
+            oof_test_path = local_config.OOF_DIR / f"{model_name}_oof_test.npy"
+            if oof_test_path.exists():
+                oof_test_predictions[blend_name] = np.load(oof_test_path)
+                print(f"  - Found OOF test predictions for {blend_name} (will use for blending)")
+    
+    if len(oof_test_predictions) == len(predictions):
+        # We have OOF test predictions for all models - use them (log space)
+        print("\nUsing OOF test predictions for blending (log space - recommended)...")
+        blend_log = 0.0
+        total_weight = sum(cfg["weights"][name] for name in oof_test_predictions.keys())
+        
+        for name, oof_pred in oof_test_predictions.items():
+            weight = cfg["weights"][name] / total_weight
+            blend_log += weight * oof_pred
+            print(f"  - Applied {name} with weight: {weight:.4f}")
+        
+        # Convert to real space
+        blend = predictions[list(predictions.keys())[0]].copy()
+        blend["SalePrice"] = np.expm1(blend_log)
+    else:
+        # Fall back to blending from CSV files (convert to log space first)
+        print("\nBlending from CSV files (converting to log space for consistency)...")
+        blend = blend_predictions(predictions, cfg["weights"], use_log_space=True)
     
     # CRITICAL: Add bounds checking to prevent numerical explosion
     # Ensure predictions are in reasonable range ($10k to $2M)

@@ -427,6 +427,35 @@ def add_interaction_features_advanced(df: pd.DataFrame) -> Tuple[pd.DataFrame, L
             df["AvgQual_x_Age"] = df["AvgQuality"] * df["Age"]
             created_features.append("AvgQual_x_Age")
     
+    # ========================================================================
+    # ERROR-DRIVEN FEATURES (Added 2025-12-20 based on error analysis)
+    # These features address specific failure patterns identified in worst predictions
+    # ========================================================================
+    
+    # 1. Qual_Age_Interaction: Addresses high errors in old houses (YearBuilt < 1960: 14.67% error)
+    #    and new houses (YearBuilt > 2005: 9.69% error)
+    if "OverallQual" in df.columns and "YearBuilt" in df.columns:
+        # Use YrSold per row if available (more accurate), otherwise use 2024 as reference
+        if "YrSold" in df.columns:
+            df["Qual_Age_Interaction"] = df["OverallQual"] * (df["YrSold"] - df["YearBuilt"])
+        else:
+            df["Qual_Age_Interaction"] = df["OverallQual"] * (2024 - df["YearBuilt"])
+        created_features.append("Qual_Age_Interaction")
+    
+    # 2. RemodAge: Age of remodel relative to build year (addresses remodel patterns)
+    #    Note: RemodAge already exists as YrSold - YearRemodAdd, but this is different
+    if "YearRemodAdd" in df.columns and "YearBuilt" in df.columns:
+        df["RemodAge_FromBuild"] = df["YearRemodAdd"] - df["YearBuilt"]
+        created_features.append("RemodAge_FromBuild")
+        # Also create binary flag
+        df["Is_Remodeled"] = (df["YearRemodAdd"] != df["YearBuilt"]).astype(int)
+        created_features.append("Is_Remodeled")
+    
+    # 3. OverallQual_Squared: Addresses non-linear quality effects (low quality: 9.88% error)
+    if "OverallQual" in df.columns:
+        df["OverallQual_Squared"] = df["OverallQual"] ** 2
+        created_features.append("OverallQual_Squared")
+    
     return df, created_features
 
 
