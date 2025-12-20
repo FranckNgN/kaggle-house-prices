@@ -106,5 +106,41 @@
     "score": 3.18379,
     "total_submissions": 49,
     "file_hash": "703c1f8176600839baca6c36ab6bf802"
+  },
+  {
+    "timestamp": "2025-12-20 12:57:30",
+    "file": "stacking_submission.csv",
+    "message": "stacking model - Optuna optimized",
+    "rank": "unknown",
+    "score": 0.13478,
+    "total_submissions": 50,
+    "file_hash": "f37149bcba7984cb9b1439a54458ab3e"
+  },
+  {
+    "timestamp": "2025-12-20 12:58:26",
+    "file": "blend_xgb_lgb_cat_Model.csv",
+    "message": "blending model - Optuna optimized",
+    "rank": "unknown",
+    "score": 0.1341,
+    "total_submissions": 50,
+    "file_hash": "41964bfd843df4d5a72d52e8551ee5ee"
+  },
+  {
+    "timestamp": "2025-12-21 00:41:54",
+    "file": "xgboost_Model.csv",
+    "message": "xgboost model - Optuna optimized",
+    "rank": "unknown",
+    "score": 0.12831,
+    "total_submissions": 50,
+    "file_hash": "fefe2bd412cb3e77cb01ac2fd200c15e"
+  },
+  {
+    "timestamp": "2025-12-21 00:46:07",
+    "file": "lightGBM_Model.csv",
+    "message": "lightgbm model - Optuna optimized",
+    "rank": "unknown",
+    "score": 0.12609,
+    "total_submissions": 50,
+    "file_hash": "d0cd4e5e9b2e883b3a0d7139478a0dba"
   }
 ]
