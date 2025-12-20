@@ -13,6 +13,61 @@ COMPETITION_NAME = "house-prices-advanced-regression-techniques"
 SUBMISSION_LOG = config.SUBMISSION_LOG_JSON
 
 
+def get_available_submissions(project_root: Optional[Path] = None) -> List[Dict]:
+    """
+    Get list of available submission CSV files (searching recursively).
+    
+    Args:
+        project_root: Optional project root path. If None, uses config.SUBMISSIONS_DIR parent.
+        
+    Returns:
+        List of dicts with 'file', 'name', 'path', and 'model' keys
+    """
+    if project_root is None:
+        # Try to infer from config path
+        project_root = config.SUBMISSIONS_DIR.parent.parent
+    
+    submissions_dir = config.SUBMISSIONS_DIR
+    if not submissions_dir.exists():
+        return []
+    
+    # Exclude sample_submission.csv, search recursively
+    csv_files = [
+        f for f in submissions_dir.rglob("*.csv")
+        if f.name != "sample_submission.csv"
+    ]
+    
+    submissions = []
+    for csv_file in sorted(csv_files):
+        # Resolve csv_file to absolute path
+        csv_file_abs = csv_file.resolve()
+        
+        # Generate model name from filename or parent folder
+        if csv_file.parent != submissions_dir:
+            model_name = csv_file.parent.name.replace("_", " ").title()
+        else:
+            model_name = csv_file.stem.replace("_", " ").replace("Model", "").strip()
+            
+        if not model_name:
+            model_name = csv_file.stem
+        
+        # Get relative path from project root
+        try:
+            rel_path = str(csv_file_abs.relative_to(project_root))
+        except ValueError:
+            # If relative_to fails, use the path as-is
+            rel_path = str(csv_file_abs)
+        
+        submissions.append({
+            "file": str(csv_file_abs),
+            "name": csv_file.name,
+            "path": rel_path,
+            "model": model_name
+        })
+    
+    return submissions
+
+
 def get_username() -> str:
     """Get Kaggle username from kaggle.json."""
     kaggle_json_path = config.KAGGLE_JSON

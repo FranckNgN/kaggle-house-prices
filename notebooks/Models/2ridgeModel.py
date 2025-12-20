@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
 import time
 import numpy as np
 import pandas as pd
@@ -11,20 +10,11 @@ from sklearn.metrics import mean_squared_error, make_scorer
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
-from utils.metrics import log_model_result
+from utils.metrics import log_model_result, rmse_real
 from utils.model_wrapper import (
     validate_predictions_wrapper,
     validate_submission_wrapper
 )
-
-
-def rmse_real(y_true_log, y_pred_log):
-    y_true = np.expm1(y_true_log)
-    y_pred = np.expm1(y_pred_log)
-    # Clip to avoid extreme values
-    y_pred = np.clip(y_pred, 0, 1e7)
-    mse = mean_squared_error(y_true, y_pred)
-    return np.sqrt(mse)
 
 
 if __name__ == "__main__":
@@ -35,11 +25,11 @@ if __name__ == "__main__":
     X = train.drop(['logSP'], axis=1)
     
     # Drop categorical columns (Ridge needs numeric only)
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    if len(categorical_cols) > 0:
-        print(f"Dropping {len(categorical_cols)} categorical columns: {list(categorical_cols)}")
-        X = X.drop(columns=categorical_cols)
-        test = test.drop(columns=categorical_cols)
+    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
+    if categorical_cols:
+        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
+        X = X.select_dtypes(include=['number'])
+        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.RIDGE
     rmse_scorer = make_scorer(rmse_real, greater_is_better=False)
@@ -107,3 +97,4 @@ if __name__ == "__main__":
 
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
     submission.to_csv(out_path, index=False)
+    print(f"Submission saved: {out_path}")

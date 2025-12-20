@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
 import warnings
 import numpy as np
 import pandas as pd
@@ -12,20 +11,11 @@ from sklearn.exceptions import ConvergenceWarning
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
+from utils.metrics import rmse_real
 from utils.model_wrapper import (
     validate_predictions_wrapper,
     validate_submission_wrapper
 )
-
-
-def rmse_real(y_true_log, y_pred_log):
-    # Use expm1 because logSP was created with log1p
-    y_true = np.expm1(y_true_log)
-    y_pred = np.expm1(y_pred_log)
-    # Clip to avoid extreme values if model is unstable
-    y_pred = np.clip(y_pred, 0, 1e7)
-    mse = mean_squared_error(y_true, y_pred)
-    return np.sqrt(mse)
 
 
 if __name__ == "__main__":

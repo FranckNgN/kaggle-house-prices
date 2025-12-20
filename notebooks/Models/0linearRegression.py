@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
 from config_local import local_config
 from config_local import model_config
@@ -39,8 +38,10 @@ if __name__ == "__main__":
     assert not X_test.isna().any().any(), "Test data has missing values"
     print("Data validation passed - no missing values")
 
-    from sklearn.linear_model import Ridge
-    model = Ridge(alpha=100.0)
+    cfg = model_config.LINEAR_REGRESSION
+    # Use alpha from config
+    alpha = cfg.get("alpha", 100.0)
+    model = Ridge(alpha=alpha)
     model.fit(X, y)
 
     pred_train_log = model.predict(X)

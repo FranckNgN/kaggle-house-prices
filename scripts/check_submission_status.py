@@ -13,39 +13,21 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import config_local.local_config as config
-from utils.kaggle_helper import load_submission_log
+from utils.kaggle_helper import load_submission_log, get_available_submissions
 
 
-def get_available_submissions():
-    """Get list of available submission CSV files."""
-    submissions_dir = config.SUBMISSIONS_DIR
-    if not submissions_dir.exists():
-        return []
-    
-    csv_files = [
-        f for f in submissions_dir.rglob("*.csv")
-        if f.name != "sample_submission.csv"
-    ]
-    
+def get_available_submissions_dict():
+    """Get list of available submission CSV files as a dict (for backward compatibility)."""
+    submissions_list = get_available_submissions(PROJECT_ROOT)
     submissions = {}
-    for csv_file in sorted(csv_files):
-        # Generate model name from filename or parent folder
-        if csv_file.parent != submissions_dir:
-            model_name = csv_file.parent.name
-        else:
-            model_name = csv_file.stem.replace("_", " ").replace("Model", "").strip()
-            
-        if not model_name:
-            model_name = csv_file.stem
-        
+    for sub in submissions_list:
         # Normalize model name for comparison
-        key = csv_file.name.lower()
+        key = sub['name'].lower()
         submissions[key] = {
-            "file": csv_file.name,
-            "path": str(csv_file),
-            "model": model_name
+            "file": sub['name'],
+            "path": sub['path'],
+            "model": sub['model']
         }
-    
     return submissions
 
 
@@ -74,7 +56,7 @@ def main():
     print("=" * 70)
     
     # Get available and submitted models
-    available = get_available_submissions()
+    available = get_available_submissions_dict()
     submitted_today = get_submitted_today()
     
     print(f"\nTotal available models: {len(available)}")

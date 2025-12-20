@@ -23,6 +23,7 @@ TRAIN_TEST_SPLIT_RANDOM_STATE = 42
 LINEAR_REGRESSION = {
     "submission_name": "0_linear_regression",
     "submission_filename": "naive_lr.csv",
+    "alpha": 100.0,  # Ridge regularization parameter
     "kfold_n_splits": 5,
     "kfold_shuffle": True,
     "kfold_random_state": 42,

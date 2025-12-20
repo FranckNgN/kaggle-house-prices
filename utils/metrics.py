@@ -2,6 +2,7 @@
 import os
 import json
 import hashlib
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
@@ -227,6 +228,27 @@ def log_kaggle_score(
         
     except Exception as e:
         print(f"    [Warning] Error updating Kaggle score: {e}")
+
+
+def rmse_real(y_true_log: np.ndarray, y_pred_log: np.ndarray, clip_max: float = 1e7) -> float:
+    """
+    Calculate RMSE in real space from log-space predictions.
+    
+    Args:
+        y_true_log: True values in log space
+        y_pred_log: Predicted values in log space
+        clip_max: Maximum value to clip predictions (default: 1e7)
+        
+    Returns:
+        RMSE in real space
+    """
+    from sklearn.metrics import mean_squared_error
+    y_true = np.expm1(y_true_log)
+    y_pred = np.expm1(y_pred_log)
+    # Clip to avoid extreme values
+    y_pred = np.clip(y_pred, 0, clip_max)
+    mse = mean_squared_error(y_true, y_pred)
+    return np.sqrt(mse)
 
 
 def get_best_models(log_path: Optional[str] = None) -> pd.DataFrame:

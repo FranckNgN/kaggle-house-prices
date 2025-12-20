@@ -6,6 +6,7 @@ import seaborn as sns
 from pathlib import Path
 from config_local import local_config as config
 
+
 def load_all_submissions(submissions_dir=None):
     """Load all model submission CSVs into a dictionary of DataFrames."""
     if submissions_dir is None:

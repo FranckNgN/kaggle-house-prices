@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
 import sys
 import pandas as pd
 from pathlib import Path

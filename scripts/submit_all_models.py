@@ -2,9 +2,14 @@
 """
 Interactive script to submit models to Kaggle.
 Allows selecting individual models or submitting all at once.
+
+Usage:
+    python scripts/submit_all_models.py              # Interactive mode
+    python scripts/submit_all_models.py --auto        # Automatic mode (non-interactive)
 """
 
 import sys
+import argparse
 from pathlib import Path
 from typing import List, Dict
 
@@ -12,44 +17,8 @@ from typing import List, Dict
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.kaggle_helper import submit_and_check, load_submission_log
+from utils.kaggle_helper import submit_and_check, load_submission_log, get_available_submissions, has_been_submitted, check_submission_limit
 import config_local.local_config as config
-
-
-def get_available_submissions() -> List[Dict]:
-    """Get list of available submission CSV files (searching recursively)."""
-    submissions_dir = config.SUBMISSIONS_DIR
-    if not submissions_dir.exists():
-        return []
-    
-    # Exclude sample_submission.csv, search recursively
-    csv_files = [
-        f for f in submissions_dir.rglob("*.csv")
-        if f.name != "sample_submission.csv"
-    ]
-    
-    submissions = []
-    for csv_file in sorted(csv_files):
-        # Resolve csv_file to absolute path to match PROJECT_ROOT
-        csv_file_abs = csv_file.resolve()
-        
-        # Generate model name from filename or parent folder
-        if csv_file.parent != submissions_dir:
-            model_name = csv_file.parent.name.replace("_", " ").title()
-        else:
-            model_name = csv_file.stem.replace("_", " ").replace("Model", "").strip()
-            
-        if not model_name:
-            model_name = csv_file.stem
-        
-        submissions.append({
-            "file": str(csv_file_abs),
-            "name": csv_file.name,
-            "path": str(csv_file_abs.relative_to(PROJECT_ROOT)),
-            "model": model_name
-        })
-    
-    return submissions
 
 
 def display_submissions(submissions: List[Dict]):
@@ -92,34 +61,6 @@ def submit_single_model(submissions: List[Dict]) -> Dict:
             return None
 
 
-def submit_all_models(submissions: List[Dict]) -> List[Dict]:
-    """Submit all models one by one."""
-    print(f"\nSubmitting {len(submissions)} models to Kaggle...")
-    print("=" * 70)
-    
-    results = []
-    for i, sub in enumerate(submissions, 1):
-        print(f"\n[{i}/{len(submissions)}] Processing: {sub['name']}")
-        print("-" * 70)
-        
-        message = f"{sub['model']} model"
-        result = submit_and_check(sub['file'], message, wait_time=8, max_retries=5)
-        
-        if result:
-            results.append({
-                "file": sub['name'],
-                "model": sub['model'],
-                "rank": result['rank'],
-                "score": result['score']
-            })
-        
-        # Wait between submissions to avoid rate limiting
-        if i < len(submissions):
-            print(f"\nWaiting 10 seconds before next submission...")
-            import time
-            time.sleep(10)
-    
-    return results
 
 
 def display_summary(results: List[Dict]):
@@ -133,16 +74,30 @@ def display_summary(results: List[Dict]):
     print(f"{'Model':<30s} {'Rank':<10s} {'Score':<15s}")
     print("-" * 70)
     
-    # Sort by score (lower is better)
-    sorted_results = sorted(results, key=lambda x: x['score'])
+    # Sort by score (lower is better, but handle N/A)
+    def sort_key(x):
+        score = x.get('score', 'N/A')
+        if isinstance(score, (int, float)):
+            return (0, score)
+        return (1, 0)
+    
+    sorted_results = sorted(results, key=sort_key)
     
     for r in sorted_results:
-        print(f"{r['model']:<30s} {r['rank']:<10d} {r['score']:<15.5f}")
+        score_str = f"{r['score']:.6f}" if isinstance(r.get('score'), (int, float)) else str(r.get('score', 'N/A'))
+        rank_str = str(r.get('rank', 'N/A'))
+        print(f"{r['model']:<30s} {rank_str:<10s} {score_str:<15s}")
     
     print("=" * 70)
-    print(f"\nBest Model: {sorted_results[0]['model']}")
-    print(f"   Score: {sorted_results[0]['score']:.5f}")
-    print(f"   Rank: {sorted_results[0]['rank']}")
+    
+    # Show best model if we have valid scores
+    valid_results = [r for r in results if isinstance(r.get('score'), (int, float))]
+    if valid_results:
+        best = min(valid_results, key=lambda x: x['score'])
+        print(f"\nBest Model: {best['model']}")
+        print(f"   Score: {best['score']:.5f}")
+        if isinstance(best.get('rank'), int):
+            print(f"   Rank: {best['rank']}")
 
 
 def main():
@@ -152,7 +107,7 @@ def main():
     print("=" * 70)
     
     # Get available submissions
-    submissions = get_available_submissions()
+    submissions = get_available_submissions(PROJECT_ROOT)
     
     if not submissions:
         print("No submission files found in data/submissions/")
@@ -181,7 +136,7 @@ def main():
         elif choice == '2':
             confirm = input(f"\nThis will submit {len(submissions)} models. Continue? (y/n): ").strip().lower()
             if confirm == 'y':
-                results = submit_all_models(submissions)
+                results = submit_all_models_auto(submissions)
                 display_summary(results)
                 input("\nPress Enter to continue...")
             else:
