@@ -40,7 +40,7 @@ def plot_comparison(df, output_dir):
     
     # Load Training Distribution as Reference
     try:
-        train_df = pd.read_csv(config.TRAIN_PROCESS7_CSV)
+        train_df = pd.read_csv(config.TRAIN_PROCESS8_CSV)
         y_train = np.expm1(train_df["logSP"])
     except Exception as e:
         print(f"Warning: Could not load training data for reference: {e}")

@@ -229,7 +229,7 @@ def main(optimize_weights: bool = True) -> None:
         if oof_predictions:
             print("Using OOF predictions for optimization (best practice)...")
             # Load true target values
-            train = pd.read_csv(local_config.TRAIN_PROCESS7_CSV)
+            train = pd.read_csv(local_config.TRAIN_PROCESS8_CSV)
             y_true = train["logSP"].values
             
             # Use all models that have OOF predictions (regardless of initial weight)
