@@ -70,5 +70,41 @@
     "rank": "unknown",
     "score": 0.18191,
     "total_submissions": 44
+  },
+  {
+    "timestamp": "2025-12-20 10:38:39",
+    "file": "xgboost_Model.csv",
+    "message": "XGBoost model - Optuna optimized",
+    "rank": "unknown",
+    "score": 0.13094,
+    "total_submissions": 45,
+    "file_hash": "457382c2934f0cc8840a4303c74a0da6"
+  },
+  {
+    "timestamp": "2025-12-20 11:18:03",
+    "file": "catboost_Model.csv",
+    "message": "CatBoost model - Optuna optimized (latest)",
+    "rank": "unknown",
+    "score": 0.13081,
+    "total_submissions": 46,
+    "file_hash": "ec024532b30123777ba8212e3f0d6ccc"
+  },
+  {
+    "timestamp": "2025-12-20 11:20:36",
+    "file": "blend_xgb_lgb_cat_Model.csv",
+    "message": "Blending model - Optimized weights (8 models)",
+    "rank": "unknown",
+    "score": 6.75855,
+    "total_submissions": 47,
+    "file_hash": "7d45267b4ee02ea43b8ae83a8c3a7a39"
+  },
+  {
+    "timestamp": "2025-12-20 11:29:11",
+    "file": "stacking_submission.csv",
+    "message": "Stacking model - Meta-learner (8 base models)",
+    "rank": "unknown",
+    "score": 3.18379,
+    "total_submissions": 49,
+    "file_hash": "703c1f8176600839baca6c36ab6bf802"
   }
 ]
