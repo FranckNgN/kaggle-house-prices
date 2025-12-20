@@ -276,36 +276,41 @@ def main() -> None:
     all_encoded_cols = encoded_cols + neighborhood_stats_cols
     
     # ================================================================
-    # DROP ORIGINAL CATEGORICAL COLUMNS (replaced by target-encoded versions)
+    # DROP ALL ORIGINAL CATEGORICAL COLUMNS (replaced by target-encoded versions)
     # ================================================================
-    # After target encoding, the original categorical columns are redundant
+    # After target encoding, ALL original categorical columns are redundant
     # and cause issues for tree models that can't handle object/string columns
-    print(f"\nDropping original categorical columns (replaced by target-encoded versions)...")
-    cols_to_drop = []
+    # We should drop ALL categorical columns, not just the ones we target-encoded
+    print(f"\nDropping ALL original categorical columns (replaced by target-encoded versions)...")
     
-    # Drop Neighborhood if we created Neighborhood statistics
-    if "Neighborhood" in train.columns and neighborhood_stats_cols:
-        cols_to_drop.append("Neighborhood")
+    # Find ALL categorical columns (object/string types) in the dataframe
+    all_categorical_cols = train.select_dtypes(exclude=['number']).columns.tolist()
     
-    # Drop columns that were target-encoded (they now have _TargetEnc versions)
-    for col in available_cols:
-        if col in train.columns:
-            cols_to_drop.append(col)
+    # Exclude the target column if it's somehow categorical (shouldn't be)
+    if "logSP" in all_categorical_cols:
+        all_categorical_cols.remove("logSP")
     
-    if cols_to_drop:
-        print(f"  Dropping {len(cols_to_drop)} original categorical columns: {cols_to_drop}")
-        train = train.drop(columns=cols_to_drop, errors='ignore')
-        test = test.drop(columns=cols_to_drop, errors='ignore')
-        print(f"  ✓ Removed redundant categorical columns")
+    if all_categorical_cols:
+        print(f"  Dropping {len(all_categorical_cols)} original categorical columns: {all_categorical_cols}")
+        train = train.drop(columns=all_categorical_cols, errors='ignore')
+        test = test.drop(columns=all_categorical_cols, errors='ignore')
+        print(f"  [SUCCESS] Removed all redundant categorical columns")
+        
+        # Verify no categorical columns remain
+        remaining_cat = train.select_dtypes(exclude=['number']).columns.tolist()
+        if remaining_cat:
+            print(f"  [WARNING] {len(remaining_cat)} categorical columns still remain: {remaining_cat}")
+        else:
+            print(f"  [VERIFIED] No categorical columns remain in final dataset")
     else:
-        print(f"  No original categorical columns to drop")
+        print(f"  No categorical columns found to drop")
     
     # Log engineering details
     update_engineering_summary("Target Encoding", {
         "encoded_features": all_encoded_cols,
         "neighborhood_stats": len(neighborhood_stats_cols),
         "other_target_encoded": len(encoded_cols),
-        "dropped_original_cols": cols_to_drop,
+        "dropped_original_cols": all_categorical_cols if 'all_categorical_cols' in locals() else [],
         "n_splits": 5,
         "smoothing": 1.0,
         "noise_level": 0.01
@@ -340,7 +345,7 @@ def main() -> None:
                 train[col] = train_scaled[:, i]
                 test[col] = test_scaled[:, i]
             
-            print(f"  ✓ Scaled target-encoded features for proper linear model convergence")
+            print(f"  [SUCCESS] Scaled target-encoded features for proper linear model convergence")
         else:
             print(f"  No target-encoded numeric features found to scale")
     else:
@@ -383,7 +388,7 @@ def main() -> None:
                 train[col] = train_scaled[:, i]
                 test[col] = test_scaled[:, i]
             
-            print(f"  ✓ Scaled Neighborhood interaction features")
+            print(f"  [SUCCESS] Scaled Neighborhood interaction features")
         else:
             print(f"  No Neighborhood interaction features created (missing dependencies)")
     else:

@@ -96,7 +96,7 @@ RANDOM_FOREST = {
     "base_params": {
         "random_state": 42,
         "n_jobs": -1,
-        "criterion": "squared_error",  # Changed from "mse" (deprecated in sklearn 1.3+)
+        # criterion: Use default or "mse" for older sklearn versions, "squared_error" for sklearn 1.3+
     },
     "optuna_settings": {
         "n_trials": 50,  # Increased for thorough optimization (~20 min target)
@@ -259,18 +259,18 @@ CATBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 10,  # Reduced for ~1 hour runtime (10 trials with 3-fold CV)
-        "n_splits": 3,  # Reduced from 5 to 3 for faster runtime while maintaining quality
+        "n_trials": 100,  # Increased for better optimization (100 trials with 5-fold CV)
+        "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
-    # Optuna search space
+    # Optuna search space (expanded for better optimization)
     "optuna_space": {
-        "iterations": (500, 1200),  # Reduced from (800, 2500) for faster training
-        "learning_rate": (0.02, 0.08, "log"),  # Narrowed range, higher min for faster convergence
-        "depth": (4, 7),  # Reduced from (4, 10) - depth 10 is very slow
-        "l2_leaf_reg": (1, 8),
-        "bagging_temperature": (0, 1),
-        "random_strength": (0, 1),
+        "iterations": (300, 2000),  # Wider range for better exploration
+        "learning_rate": (0.01, 0.1, "log"),  # Wider range including lower rates
+        "depth": (4, 10),  # Full depth range for better models
+        "l2_leaf_reg": (1, 10),  # Wider regularization range
+        "bagging_temperature": (0, 2),  # Wider range
+        "random_strength": (0, 2),  # Wider range
     },
     # Cross-validation settings
     "cv": {
@@ -334,9 +334,11 @@ STACKING = {
         "svr"
     ],
     # Meta-model to combine predictions
-    "meta_model": "lasso", 
+    # Options: "lasso", "ridge", "xgboost"
+    # Ridge is more stable than Lasso for stacking
+    "meta_model": "ridge",  # Changed from "lasso" for better stability
     "meta_model_params": {
-        "alpha": 0.0005,
+        "alpha": 0.1,  # Ridge alpha (was Lasso alpha 0.0005)
         "random_state": 42,
     },
     "cv_n_splits": 5,

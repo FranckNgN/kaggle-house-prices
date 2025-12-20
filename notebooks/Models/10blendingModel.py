@@ -266,6 +266,13 @@ def main(optimize_weights: bool = True) -> None:
     # Blend predictions
     blend = blend_predictions(predictions, cfg["weights"])
     
+    # CRITICAL: Add bounds checking to prevent numerical explosion
+    # Ensure predictions are in reasonable range ($10k to $2M)
+    blend["SalePrice"] = np.clip(blend["SalePrice"], 10000, 2000000)
+    
+    print(f"  Blended prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")
+    print(f"  Blended prediction mean: ${blend['SalePrice'].mean():,.0f} (expected ~$180k)")
+    
     # Validate submission format and ID matching
     validate_submission_wrapper(blend, len(blend), "Blending", test_ids=blend["Id"])
     
@@ -274,7 +281,6 @@ def main(optimize_weights: bool = True) -> None:
     blend.to_csv(out_path, index=False)
     
     print(f"--- Blended predictions saved to: {out_path} ---")
-    print(f"Prediction range: ${blend['SalePrice'].min():,.0f} - ${blend['SalePrice'].max():,.0f}")
 
 
 if __name__ == "__main__":

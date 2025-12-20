@@ -8,7 +8,7 @@
 
 ## Abstract
 
-This project implements a complete machine learning pipeline for predicting house sale prices using advanced regression techniques. Through systematic 8-stage preprocessing, feature engineering, and ensemble modeling, we achieve **RMSLE 0.12973** (CatBoost, best score as of 2025-12-19) on the Kaggle leaderboard. The work demonstrates the critical importance of target transformation, feature engineering, model selection, and systematic validation in regression tasks.
+This project implements a complete machine learning pipeline for predicting house sale prices using advanced regression techniques. Through systematic 8-stage preprocessing, feature engineering, and ensemble modeling, we achieve **RMSLE 0.12973** (CatBoost, best score as of 2025-12-20) on the Kaggle leaderboard. The work demonstrates the critical importance of target transformation, feature engineering, model selection, and systematic validation in regression tasks. Comprehensive analysis of 55 model runs reveals key insights: tree-based models (CatBoost, XGBoost) generalize excellently (CV-Kaggle gap <0.02), while linear models show severe overfitting (gap >1.0) despite excellent CV performance. Ensemble methods (blending, stacking) have been fixed for numerical stability but currently underperform single models due to high base model correlation (>0.95).
 
 ---
 
@@ -526,7 +526,7 @@ From ModelComparison.ipynb analysis:
 
 ### 4.7 Best Model Summary
 
-**Winner: CatBoost** with RMSLE 0.12973 (best score as of 2025-12-19)
+**Winner: CatBoost** with RMSLE 0.12973 (best score as of 2025-12-20, confirmed through comprehensive analysis)
 
 **Why CatBoost Won:**
 - Superior categorical feature handling (native support)
@@ -546,6 +546,336 @@ From ModelComparison.ipynb analysis:
 - Kaggle RMSLE: 0.12973
 - Features: 264 (process6, best submission)
 - Runtime: ~20 minutes (Optuna optimization)
+
+---
+
+### 4.8 Comprehensive Model Analysis (Updated: 2025-12-20)
+
+#### 4.8.1 Complete Model Performance Summary
+
+**Total Model Runs**: 55  
+**Valid Model Runs** (RMSE < 1.0): 51  
+**Models with Kaggle Scores**: 17
+
+**Best Models by CV RMSE:**
+| Rank | Model | CV RMSE | Kaggle Score | Features | Date | Notes |
+|------|-------|---------|--------------|----------|------|-------|
+| 1 | Ridge | 0.09614 | - | 249 (process8) | 2025-12-20 | ⚠️ Overfitting risk |
+| 2 | Ridge | 0.09665 | - | 248 (process8) | 2025-12-20 | ⚠️ Overfitting risk |
+| 3 | STACKING_META | 0.11179 | 0.13478 | 8 (meta) | 2025-12-20 | ✅ Fixed (Ridge meta) |
+| 4 | stacking | 0.11180 | 3.18379 | 251 | 2025-12-20 | ❌ Exploded (Lasso meta) |
+| 5 | STACKING_META | 0.11184 | 3.18379 | 8 (meta) | 2025-12-20 | ❌ Exploded (Lasso meta) |
+| 6 | blending | 0.11194 | 0.13410 | 251 | 2025-12-20 | ✅ Fixed |
+| 7 | XGBoost | 0.11436 | - | 264 | 2025-12-19 | ✅ Best CV (tree-based) |
+| 8 | Ridge | 0.11714 | - | 251 | 2025-12-20 | Base for stacking |
+
+**Best Models by Kaggle Score:**
+| Rank | Model | Kaggle Score | CV RMSE | Gap | Features | Date | Status |
+|------|-------|--------------|---------|-----|----------|------|--------|
+| 1 | **CatBoost** | **0.12973** | 0.12122 | 0.00956 | 264 | 2025-12-19 | 🏆 **Best Overall** |
+| 2 | CatBoost | 0.13081 | 0.12064 | 0.01017 | 248 | 2025-12-20 | ✅ Optuna optimized |
+| 3 | CatBoost | 0.13081 | 0.12187 | 0.00894 | 248 | 2025-12-20 | ✅ Base for stacking |
+| 4 | CatBoost | 0.13081 | 0.12258 | 0.00777 | 251 | 2025-12-20 | ✅ Base for stacking |
+| 5 | XGBoost | 0.13094 | 0.11864 | 0.01230 | 248 | 2025-12-20 | ✅ Optuna optimized |
+| 6 | XGBoost | 0.13094 | 0.13262 | -0.00168 | 248 | 2025-12-20 | ✅ Base for stacking |
+| 7 | XGBoost | 0.13335 | 0.11987 | 0.01348 | 264 | 2025-12-19 | ✅ Optuna optimized |
+| 8 | blending | 0.13410 | 0.11194 | 0.02216 | 251 | 2025-12-20 | ✅ Fixed ensemble |
+| 9 | STACKING_META | 0.13478 | 0.11179 | 0.02299 | 8 | 2025-12-20 | ✅ Fixed ensemble |
+| 10 | Random Forest | 0.14460 | 0.13647 | 0.00813 | 264 | 2025-12-19 | ✅ Good baseline |
+
+#### 4.8.2 CV RMSE vs Kaggle Score Correlation Analysis
+
+**Correlation Coefficient**: 0.0294 (very weak positive correlation)
+
+**Key Findings:**
+- **Weak correlation** indicates CV RMSE is not a reliable predictor of Kaggle performance
+- **Tree-based models** show consistent small gaps (<0.02), indicating good generalization
+- **Linear models** show catastrophic gaps (>1.0), indicating severe overfitting
+- **Ensemble models** show moderate gaps (0.02-0.03), but worse than best single models
+
+**CV-Kaggle Gap Analysis:**
+| Model Type | Avg Gap | Interpretation |
+|------------|---------|---------------|
+| CatBoost | 0.009 | ✅ Excellent generalization |
+| XGBoost | 0.012 | ✅ Good generalization |
+| Random Forest | 0.008 | ✅ Good generalization |
+| Blending | 0.022 | ⚠️ Moderate overfitting |
+| Stacking | 0.023 | ⚠️ Moderate overfitting |
+| Ridge | 1.317 | ❌ Severe overfitting |
+| Lasso | 1.664 | ❌ Severe overfitting |
+
+**Insight**: Tree-based models generalize well, while linear models overfit severely despite excellent CV scores.
+
+#### 4.8.3 Hyperparameter Analysis by Model Type
+
+##### CatBoost (Best Model: Kaggle 0.12973)
+
+**Best Configuration** (2025-12-19, process6):
+```python
+{
+    "depth": 6,
+    "iterations": 500,
+    "learning_rate": 0.03,
+    "task_type": "GPU",
+    "devices": "0"
+}
+```
+
+**Optuna Optimized** (2025-12-20, process8):
+```python
+{
+    "depth": 6,
+    "iterations": 964,
+    "learning_rate": 0.06387,
+    "l2_leaf_reg": 1,
+    "bagging_temperature": 1,
+    "random_strength": 0,
+    "task_type": "GPU"
+}
+```
+
+**Analysis:**
+- **Depth 6** provides optimal complexity (not too shallow, not too deep)
+- **Learning rate 0.03-0.06** balances convergence speed and stability
+- **Moderate iterations** (500-1000) prevent overfitting
+- **GPU acceleration** enables practical optimization
+- **Low L2 regularization** (1) suggests good feature quality
+
+**Key Insight**: Simpler configuration (depth=6, lr=0.03, iterations=500) achieved best Kaggle score, suggesting that more complex optimization may overfit.
+
+##### XGBoost (Best Kaggle: 0.13094)
+
+**Best Configuration** (2025-12-20, process8):
+```python
+{
+    "max_depth": 7,
+    "n_estimators": 643,
+    "learning_rate": 0.02860,
+    "colsample_bytree": 0.7396,
+    "subsample": 0.6487,
+    "min_child_weight": 4,
+    "gamma": 0,
+    "tree_method": "hist",
+    "device": "cuda"
+}
+```
+
+**Analysis:**
+- **Moderate depth** (7) with **moderate estimators** (643) balances complexity
+- **Conservative learning rate** (0.0286) ensures stable convergence
+- **Feature sampling** (colsample=0.74, subsample=0.65) prevents overfitting
+- **Min child weight 4** adds regularization
+- **GPU acceleration** enables practical training
+
+**Comparison with Process6** (Kaggle 0.13335):
+- Process8 improved by 0.00241, suggesting better feature representation
+- Similar hyperparameters, indicating feature engineering impact
+
+##### LightGBM (Best CV: 0.11795, No Kaggle Submission)
+
+**Best Configuration** (process8):
+```python
+{
+    "max_depth": 4,
+    "n_estimators": 1570,
+    "learning_rate": 0.02763,
+    "num_leaves": 74,
+    "colsample_bytree": 0.9649,
+    "subsample": 0.6557,
+    "min_child_samples": 11,
+    "reg_alpha": 0,
+    "reg_lambda": 3,
+    "device_type": "gpu"
+}
+```
+
+**Analysis:**
+- **Shallow depth** (4) with **many leaves** (74) creates wide trees
+- **High feature sampling** (0.965) uses most features
+- **Moderate L2 regularization** (lambda=3)
+- **Many estimators** (1570) with low learning rate (0.0276) for stability
+
+##### Random Forest (Best Kaggle: 0.14460)
+
+**Best Configuration** (process8, Optuna optimized):
+```python
+{
+    "n_estimators": 823,
+    "max_depth": 17,
+    "max_features": 0.3406,
+    "min_samples_leaf": 2,
+    "min_samples_split": 6,
+    "criterion": "squared_error"
+}
+```
+
+**Analysis:**
+- **Deep trees** (depth=17) with **moderate feature sampling** (0.34)
+- **Balanced leaf/split constraints** prevent overfitting
+- **Many estimators** (823) for stability
+
+##### SVR (Best Kaggle: 0.18191)
+
+**Best Configuration** (process8, Optuna optimized):
+```python
+{
+    "C": 9.736,
+    "gamma": 0.0001001,
+    "epsilon": 0.00407,
+    "kernel": "rbf"
+}
+```
+
+**Analysis:**
+- **Moderate C** (9.74) balances margin and errors
+- **Very small gamma** (0.0001) creates smooth decision boundaries
+- **Tight epsilon** (0.004) for precise regression
+
+##### Ridge Regression (Best CV: 0.09614, Kaggle: 1.41358)
+
+**Best Configuration** (process8):
+```python
+{
+    "alpha": 10,
+    "cv_n_splits": 5
+}
+```
+
+**Analysis:**
+- **Excellent CV performance** (0.09614) but **catastrophic Kaggle score** (1.41)
+- **Severe overfitting** despite cross-validation
+- **Linear model limitations** with complex feature space (248-251 features)
+
+**Insight**: Linear models struggle with high-dimensional feature spaces, even with regularization.
+
+##### Ensemble Models
+
+**Blending** (Best: Kaggle 0.13410, CV 0.11194):
+```python
+{
+    "weights": {
+        "ridge": 0.565,      # Dominant weight
+        "lgb": 0.1835,
+        "cat": 0.1454,
+        "rf": 0.0559,
+        "xgb": 0.0399,
+        "elasticNet": 0.0103,
+        "lasso": 0.0,        # Zero weight
+        "svr": 0.0           # Zero weight
+    },
+    "optimization_method": "SLSQP"
+}
+```
+
+**Analysis:**
+- **Ridge dominates** (56.5% weight) despite poor individual Kaggle performance
+- **Tree-based models** contribute ~37% combined
+- **Lasso and SVR** receive zero weight (filtered out)
+- **CV-Kaggle gap**: 0.02216 (moderate overfitting)
+
+**Stacking** (Best: Kaggle 0.13478, CV 0.11179):
+```python
+{
+    "meta_model": "ridge",
+    "meta_params": {"alpha": 0.1, "random_state": 42},
+    "base_models": ["xgboost", "lightgbm", "catboost", "ridge", "lasso", 
+                    "elastic_net", "random_forest", "svr"]
+}
+```
+
+**Analysis:**
+- **Ridge meta-learner** (alpha=0.1) provides stability
+- **8 base models** for diversity
+- **CV-Kaggle gap**: 0.02299 (moderate overfitting)
+- **Fixed numerical stability** (bounds checking, clipping)
+
+**Failed Stacking Attempts:**
+- **Lasso meta-learner** (alpha=0.0005) caused numerical explosions (Kaggle 3.18)
+- **Issue**: Lasso with very low alpha creates instability in ensemble predictions
+
+#### 4.8.4 Feature Engineering Impact Analysis
+
+**Process6 vs Process8 Comparison:**
+
+| Model | Process6 (264 features) | Process8 (248-251 features) | Change | Winner |
+|-------|-------------------------|----------------------------|--------|--------|
+| CatBoost | 0.12973 (Kaggle) | 0.13081 (Kaggle) | +0.00108 | Process6 |
+| XGBoost | 0.13335 (Kaggle) | 0.13094 (Kaggle) | -0.00241 | Process8 ✅ |
+| Ridge | 1.41358 (Kaggle) | 0.09665 (CV only) | - | Process8 (CV) |
+
+**Key Findings:**
+- **XGBoost improved** with Process8 (target encoding + feature selection)
+- **CatBoost slightly worse** with Process8, possibly due to:
+  - Fewer features (264→248)
+  - Target encoding noise
+  - Native categorical handling prefers original features
+- **Feature selection** (264→248) removes noise without significant loss
+- **Target encoding** adds value but requires careful implementation
+
+#### 4.8.5 Ensemble Model Analysis
+
+**Blending vs Stacking Comparison:**
+
+| Metric | Blending | Stacking (Ridge meta) | Stacking (Lasso meta) |
+|--------|----------|----------------------|----------------------|
+| CV RMSE | 0.11194 | 0.11179 | 0.11180 |
+| Kaggle Score | 0.13410 | 0.13478 | 3.18379 ❌ |
+| CV-Kaggle Gap | 0.02216 | 0.02299 | 3.07199 |
+| Status | ✅ Fixed | ✅ Fixed | ❌ Exploded |
+
+**Key Findings:**
+1. **Both ensembles fixed** (bounds checking, clipping) but still worse than best single model
+2. **Blending slightly better** than stacking (0.13410 vs 0.13478)
+3. **Lasso meta-learner unstable** (causes numerical explosions)
+4. **Ridge meta-learner stable** but doesn't improve over single models
+5. **Base model correlation** (>0.95) limits ensemble benefits
+
+**Why Ensembles Underperform:**
+- **High correlation** between base models (>0.95) reduces diversity
+- **Ridge dominance** in blending (56.5%) despite poor individual performance
+- **CV overfitting**: Excellent CV scores don't translate to Kaggle
+- **Meta-learner limitations**: Ridge/Lasso struggle with correlated inputs
+
+**Recommendation**: Focus on improving single best model (CatBoost) rather than ensembles until base model diversity improves.
+
+#### 4.8.6 Key Insights & Recommendations
+
+**1. Model Selection Priority:**
+- ✅ **CatBoost**: Best overall (0.12973), excellent generalization
+- ✅ **XGBoost**: Close second (0.13094), good generalization
+- ⚠️ **Ensembles**: Fixed but underperform single models
+- ❌ **Linear models**: Severe overfitting despite excellent CV
+
+**2. Hyperparameter Strategy:**
+- **Simpler is better**: Best CatBoost used simple config (depth=6, lr=0.03)
+- **Moderate complexity**: Avoid very deep trees or very high learning rates
+- **GPU acceleration**: Essential for practical optimization
+- **Regularization**: Low L2 for tree models, moderate for linear
+
+**3. Feature Engineering:**
+- **Process6** (264 features) best for CatBoost
+- **Process8** (248 features) best for XGBoost
+- **Target encoding**: Adds value but requires careful implementation
+- **Feature selection**: Removes noise without significant loss
+
+**4. Ensemble Strategy:**
+- **Current ensembles underperform** due to high base model correlation
+- **Need more diverse base models** (different algorithms, different feature sets)
+- **Meta-learner stability**: Ridge > Lasso for numerical stability
+- **Bounds checking essential** to prevent numerical explosions
+
+**5. Overfitting Detection:**
+- **CV-Kaggle gap** is critical metric
+- **Tree-based models**: <0.02 gap = good generalization
+- **Linear models**: >1.0 gap = severe overfitting
+- **Ensembles**: 0.02-0.03 gap = moderate overfitting
+
+**6. Next Steps:**
+- ✅ **Focus on CatBoost optimization** (100 Optuna trials, expanded search space)
+- ✅ **Fix ensemble numerical stability** (completed)
+- 🔄 **Improve base model diversity** (different feature sets, different algorithms)
+- 🔄 **Pseudo-labeling** (use confident test predictions to augment training)
+- 🔄 **Error analysis** (identify which houses/neighborhoods are hardest to predict)
 
 ---
 

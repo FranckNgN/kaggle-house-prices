@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
 import time
 import numpy as np
 import pandas as pd
@@ -171,6 +172,14 @@ if __name__ == "__main__":
     print("Generating final predictions...")
     final_pred_log = meta_model.predict(oof_test)
     
+    # CRITICAL: Add bounds checking to prevent numerical explosion
+    # Clip to reasonable log space bounds (log1p of $10k to $2M)
+    log_min = np.log1p(10000)   # $10k minimum
+    log_max = np.log1p(2000000) # $2M maximum
+    final_pred_log = np.clip(final_pred_log, log_min, log_max)
+    
+    print(f"  Log space range: {final_pred_log.min():.4f} to {final_pred_log.max():.4f}")
+    
     # Validate predictions
     from utils.model_wrapper import (
         validate_predictions_wrapper,
@@ -178,7 +187,14 @@ if __name__ == "__main__":
     )
     validate_predictions_wrapper(final_pred_log, "Stacking", target_is_log=True)
     
+    # Transform to real space
     final_pred_real = np.expm1(final_pred_log)
+    
+    # Double-check bounds in real space and clip if needed
+    final_pred_real = np.clip(final_pred_real, 10000, 2000000)
+    
+    print(f"  Real space range: ${final_pred_real.min():,.0f} to ${final_pred_real.max():,.0f}")
+    print(f"  Real space mean: ${final_pred_real.mean():,.0f} (expected ~$180k)")
 
     submission = load_sample_submission()
     submission["SalePrice"] = final_pred_real

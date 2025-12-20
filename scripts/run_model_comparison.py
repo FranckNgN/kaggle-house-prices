@@ -186,7 +186,89 @@ plt.savefig(output_dir / "correlation_heatmap.png", dpi=150, bbox_inches='tight'
 print(f"   [OK] Saved: {output_dir / 'correlation_heatmap.png'}")
 plt.close()
 
-# 5. Print statistics
+# 5. Pairwise Comparison (scatter plots for top models)
+print("\n8. Generating pairwise comparison plot...")
+if len(valid_models) >= 2:
+    # Select top models (prioritize tree-based and ensemble models)
+    top_models = []
+    priority_keywords = ["catboost", "xgboost", "lightgbm", "blending", "stacking", "random_forest"]
+    
+    # First, add models with priority keywords
+    for keyword in priority_keywords:
+        for model in valid_models:
+            if keyword.lower() in model.lower() and model not in top_models:
+                top_models.append(model)
+    
+    # Add other models if we have space (limit to 6 models for readability)
+    max_models = 6
+    for model in valid_models:
+        if len(top_models) >= max_models:
+            break
+        if model not in top_models:
+            top_models.append(model)
+    
+    if len(top_models) >= 2:
+        try:
+            # Create pairwise scatter plot matrix
+            fig, axes = plt.subplots(len(top_models), len(top_models), figsize=(20, 20))
+            fig.suptitle("Pairwise Model Comparison Matrix", fontsize=16, fontweight='bold', y=0.995)
+            
+            for i, model1 in enumerate(top_models):
+                for j, model2 in enumerate(top_models):
+                    ax = axes[i, j]
+                    
+                    if i == j:
+                        # Diagonal: show distribution
+                        ax.hist(df_valid[model1], bins=50, alpha=0.7, color='steelblue', edgecolor='black')
+                        ax.set_title(f"{model1}", fontsize=10, fontweight='bold')
+                        ax.set_xlabel("SalePrice ($)", fontsize=8)
+                        ax.set_ylabel("Frequency", fontsize=8)
+                    else:
+                        # Off-diagonal: scatter plot
+                        ax.scatter(df_valid[model2], df_valid[model1], alpha=0.3, s=10, color='steelblue')
+                        
+                        # Add diagonal line (perfect correlation)
+                        min_val = min(df_valid[model1].min(), df_valid[model2].min())
+                        max_val = max(df_valid[model1].max(), df_valid[model2].max())
+                        ax.plot([min_val, max_val], [min_val, max_val], 'r--', alpha=0.5, linewidth=1)
+                        
+                        # Calculate and display correlation
+                        corr = df_valid[model1].corr(df_valid[model2])
+                        ax.text(0.05, 0.95, f'r={corr:.3f}', transform=ax.transAxes, 
+                               fontsize=9, verticalalignment='top', 
+                               bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+                        
+                        if j == 0:
+                            ax.set_ylabel(model1, fontsize=9, fontweight='bold')
+                        if i == len(top_models) - 1:
+                            ax.set_xlabel(model2, fontsize=9, fontweight='bold')
+                    
+                    ax.tick_params(labelsize=7)
+                    ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(output_dir / "pairwise_comparison.png", dpi=150, bbox_inches='tight')
+            print(f"   [OK] Saved: {output_dir / 'pairwise_comparison.png'}")
+            plt.close()
+        except Exception as e:
+            print(f"   [WARNING] Error generating pairwise comparison: {e}")
+            print(f"   [INFO] Falling back to seaborn pairplot...")
+            # Fallback to seaborn pairplot
+            try:
+                plt.figure(figsize=(15, 15))
+                sns.pairplot(df_valid[top_models], diag_kind="kde", plot_kws={'alpha': 0.4})
+                plt.suptitle("Pairwise Comparison of Top Models", fontsize=16, fontweight='bold', y=1.02)
+                plt.savefig(output_dir / "pairwise_comparison.png", dpi=150, bbox_inches='tight')
+                print(f"   [OK] Saved: {output_dir / 'pairwise_comparison.png'} (using seaborn pairplot)")
+                plt.close()
+            except Exception as e2:
+                print(f"   [ERROR] Could not generate pairwise comparison: {e2}")
+    else:
+        print(f"   [SKIP] Need at least 2 models for pairwise comparison (found {len(top_models)})")
+else:
+    print(f"   [SKIP] Need at least 2 models for pairwise comparison (found {len(valid_models)})")
+
+# 6. Print statistics
 print("\n" + "="*80)
 print("DISTRIBUTION STATISTICS: Predictions vs Target")
 print("="*80)
