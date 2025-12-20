@@ -27,8 +27,8 @@ def rmse_real(y_true_log, y_pred_log):
 
 
 if __name__ == "__main__":
-    train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
-    test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
+    train = pd.read_csv(local_config.TRAIN_PROCESS7_CSV)
+    test = pd.read_csv(local_config.TEST_PROCESS7_CSV)
 
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)

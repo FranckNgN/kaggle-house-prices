@@ -34,17 +34,40 @@ if __name__ == "__main__":
     print("Skewed columns (|skew| > 0.75):")
     print(list(skewed_cols))
 
-    # Using a try-except block to handle potential numpy/sklearn version conflicts
-    try:
-        pt = PowerTransformer(method="yeo-johnson")
-        train[skewed_cols] = pt.fit_transform(train[skewed_cols])
-        test[skewed_cols] = pt.transform(test[skewed_cols])
-        print(f"Applied Yeo-Johnson transform to {len(skewed_cols)} columns.")
-    except Exception as e:
-        print(f"Warning: Yeo-Johnson transform failed ({e}). Falling back to log1p.")
-        for col in skewed_cols:
+    # Transform columns one by one to handle failures gracefully
+    # Some columns with extreme skewness may cause PowerTransformer to fail
+    transformed_cols = []
+    failed_cols = []
+    
+    for col in skewed_cols:
+        try:
+            pt = PowerTransformer(method="yeo-johnson")
+            train_transformed = pt.fit_transform(train[[col]])
+            test_transformed = pt.transform(test[[col]])
+            
+            # Check if transformation produced valid results (not all zeros or all same)
+            if (train_transformed.std() > 1e-6 and 
+                len(np.unique(train_transformed)) > 1 and
+                not np.isnan(train_transformed).any()):
+                train[col] = train_transformed.ravel()
+                test[col] = test_transformed.ravel()
+                transformed_cols.append(col)
+            else:
+                # Transformation produced invalid results, use log1p instead
+                print(f"  Warning: {col} transformation produced invalid results, using log1p instead.")
+                train[col] = np.log1p(train[col].clip(lower=0))
+                test[col] = np.log1p(test[col].clip(lower=0))
+                failed_cols.append(col)
+        except Exception as e:
+            # PowerTransformer failed, use log1p as fallback
+            print(f"  Warning: {col} Yeo-Johnson transform failed ({e}), using log1p instead.")
             train[col] = np.log1p(train[col].clip(lower=0))
             test[col] = np.log1p(test[col].clip(lower=0))
+            failed_cols.append(col)
+    
+    print(f"Applied Yeo-Johnson transform to {len(transformed_cols)} columns.")
+    if failed_cols:
+        print(f"Used log1p fallback for {len(failed_cols)} columns: {failed_cols}")
 
 
     Path(local_config.TRAIN_PROCESS3_CSV).parent.mkdir(parents=True, exist_ok=True)

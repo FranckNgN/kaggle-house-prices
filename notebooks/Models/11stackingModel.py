@@ -44,8 +44,8 @@ if __name__ == "__main__":
     # Start timing for entire stacking process
     start_time = time.time()
     
-    train = pd.read_csv(local_config.TRAIN_PROCESS6_CSV)
-    test = pd.read_csv(local_config.TEST_PROCESS6_CSV)
+    train = pd.read_csv(local_config.TRAIN_PROCESS7_CSV)
+    test = pd.read_csv(local_config.TEST_PROCESS7_CSV)
 
     y = train["logSP"].values
     feature_names = train.drop(columns=["logSP"]).columns.tolist()
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     base_model_names = cfg["base_models"]
     
     # Get modification time of input data for cache validation
-    train_mtime = os.path.getmtime(local_config.TRAIN_PROCESS6_CSV)
-    test_mtime = os.path.getmtime(local_config.TEST_PROCESS6_CSV)
+    train_mtime = os.path.getmtime(local_config.TRAIN_PROCESS7_CSV)
+    test_mtime = os.path.getmtime(local_config.TEST_PROCESS7_CSV)
     latest_input_mtime = max(train_mtime, test_mtime)
 
     kf = KFold(
