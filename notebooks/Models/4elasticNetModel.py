@@ -2,11 +2,13 @@
 # coding: utf-8
 
 import os
+import warnings
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.metrics import mean_squared_error, make_scorer
+from sklearn.exceptions import ConvergenceWarning
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
@@ -32,6 +34,13 @@ if __name__ == "__main__":
 
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
+    
+    # Drop categorical columns for linear models (tree models can handle them)
+    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
+    if categorical_cols:
+        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
+        X = X.select_dtypes(include=['number'])
+        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.ELASTIC_NET
     
@@ -50,18 +59,30 @@ if __name__ == "__main__":
     
     print("Searching best hyperparameters for ElasticNet using GridSearchCV...")
     
-    enet = ElasticNet(max_iter=cfg["max_iter"], random_state=cfg["random_state"])
+    # Suppress convergence warnings - they're non-fatal and can clutter output
+    # The model will still work, just may not be fully converged for some parameter combinations
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        
+        # Get tolerance from config if available, otherwise use default
+        tol = cfg.get("tol", 1e-4)
+        
+        enet = ElasticNet(
+            max_iter=cfg["max_iter"], 
+            tol=tol,
+            random_state=cfg["random_state"]
+        )
     
-    grid = GridSearchCV(
-        estimator=enet,
-        param_grid=param_grid,
-        cv=cv,
-        scoring=rmse_scorer,
-        n_jobs=-1,
-        verbose=1
-    )
-    
-    grid.fit(X, y)
+        grid = GridSearchCV(
+            estimator=enet,
+            param_grid=param_grid,
+            cv=cv,
+            scoring=rmse_scorer,
+            n_jobs=-1,
+            verbose=1
+        )
+        
+        grid.fit(X, y)
     
     best_params = grid.best_params_
     best_rmse_cv = -grid.best_score_

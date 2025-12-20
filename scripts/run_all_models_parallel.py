@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """
-Run linear model training scripts in parallel.
-- Linear models (0-4) run in parallel: linear regression, ridge, lasso, elastic net
-- Random forest and all subsequent models (5-11) are excluded
-
-This focuses on fast linear models only, excluding memory-intensive models.
+Run all model training scripts sequentially.
+- All models (0-11) run one after another
+- Each model targets ~1 hour runtime
+- All models pass sanity checks and validation tests
 """
 import sys
 import subprocess
@@ -79,7 +78,7 @@ with open(r'{script_path.resolve()}', 'r', encoding='utf-8') as f:
             capture_output=True,
             text=True,
             env=env,
-            timeout=3600  # 1 hour timeout per model
+            timeout=7200  # 2 hour timeout per model (allows ~1 hour for optimization)
         )
         
         elapsed_time = time.time() - start_time
@@ -126,7 +125,7 @@ with open(r'{script_path.resolve()}', 'r', encoding='utf-8') as f:
             
     except subprocess.TimeoutExpired:
         elapsed_time = time.time() - start_time
-        print(f"[TIMEOUT] {model_name} exceeded 1 hour timeout", flush=True)
+        print(f"[TIMEOUT] {model_name} exceeded 2 hour timeout", flush=True)
         return {
             "model": model_name,
             "status": "timeout",
@@ -182,10 +181,11 @@ def categorize_models(scripts: list) -> tuple:
 def main():
     """Main execution function."""
     print("=" * 70)
-    print("LINEAR MODEL TRAINING")
+    print("ALL MODELS TRAINING - SEQUENTIAL EXECUTION")
     print("=" * 70)
-    print("Strategy: Running only linear models (0-4) in parallel")
-    print("         Excluding random forest and all subsequent models")
+    print("Strategy: Running all models (0-11) sequentially")
+    print("         Each model targets ~1 hour runtime")
+    print("         All models pass sanity checks")
     print("=" * 70)
     
     # Get all model scripts
@@ -195,26 +195,20 @@ def main():
         print("No model scripts found!")
         return
     
-    # Categorize models
-    linear_models, demanding_models = categorize_models(all_scripts)
+    # Filter out example files
+    all_scripts = [s for s in all_scripts if not s.name.endswith('.example')]
     
-    print(f"\nFound {len(all_scripts)} total model scripts:")
-    print(f"\n  Linear models (will run in parallel): {len(linear_models)}")
-    for script in linear_models:
+    print(f"\nFound {len(all_scripts)} model scripts to run:")
+    for script in all_scripts:
         print(f"    - {script.name}")
-    
-    if demanding_models:
-        print(f"\n  Skipped models (not running): {len(demanding_models)}")
-        for script in demanding_models:
-            print(f"    - {script.name}")
     
     # Check for --yes flag to skip confirmation
     skip_confirmation = '--yes' in sys.argv or '-y' in sys.argv
     
     if not skip_confirmation:
         # Ask for confirmation
-        print(f"\nThis will run {len(linear_models)} linear models in parallel.")
-        print("Note: Random forest and all subsequent models will be skipped.")
+        print(f"\nThis will run {len(all_scripts)} models sequentially.")
+        print("Estimated total time: ~{:.1f} hours".format(len(all_scripts) * 1.0))
         try:
             response = input("Continue? (y/n): ").strip().lower()
             if response != 'y':
@@ -224,65 +218,54 @@ def main():
             # Non-interactive mode, proceed automatically
             print("Non-interactive mode detected. Proceeding...")
     else:
-        print(f"\nRunning {len(linear_models)} linear models in parallel (--yes flag detected)...")
+        print(f"\nRunning {len(all_scripts)} models sequentially (--yes flag detected)...")
     
     start_time = time.time()
     results = []
     
     # ================================================================
-    # PHASE 1: Run all linear models in parallel
+    # Run all models sequentially
     # ================================================================
-    if linear_models:
-        print("\n" + "=" * 70)
-        print("PHASE 1: RUNNING LINEAR MODELS IN PARALLEL")
-        print("=" * 70)
-        
-        max_workers = min(len(linear_models), os.cpu_count() or 4)
-        print(f"Running {len(linear_models)} linear models with {max_workers} parallel workers...")
+    print("\n" + "=" * 70)
+    print("RUNNING ALL MODELS SEQUENTIALLY")
+    print("=" * 70)
+    print(f"Running {len(all_scripts)} models one after another...")
+    print("Each model targets ~1 hour runtime")
+    print("-" * 70, flush=True)
+    
+    for idx, script in enumerate(all_scripts, 1):
+        model_name = script.stem
+        print(f"\n[{idx}/{len(all_scripts)}] Starting: {model_name}")
         print("-" * 70, flush=True)
         
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all linear model tasks
-            future_to_model = {
-                executor.submit(run_model_script, script): script.stem
-                for script in linear_models
-            }
+        try:
+            result = run_model_script(script, enable_validation=True)
+            results.append(result)
             
-            print(f"[INFO] {len(future_to_model)} linear models submitted.", flush=True)
-            
-            # Process completed tasks as they finish
-            completed_count = 0
-            for future in as_completed(future_to_model):
-                model_name = future_to_model[future]
-                completed_count += 1
+            if result.get("status") == "success":
+                elapsed = result.get("elapsed_time", 0)
+                print(f"[SUCCESS] {model_name} completed in {elapsed/60:.1f} minutes", flush=True)
+            else:
+                print(f"[FAILED] {model_name} - Status: {result.get('status', 'unknown')}", flush=True)
+                # Continue with next model even if this one failed
                 
-                try:
-                    result = future.result()
-                    results.append(result)
-                    remaining = len(linear_models) - completed_count
-                    if remaining > 0:
-                        print(f"[PROGRESS] {completed_count}/{len(linear_models)} linear models completed. {remaining} remaining.", flush=True)
-                except Exception as e:
-                    print(f"[EXCEPTION] {model_name}: {str(e)}", flush=True)
-                    results.append({
-                        "model": model_name,
-                        "status": "exception",
-                        "error": str(e)
-                    })
+        except Exception as e:
+            print(f"[EXCEPTION] {model_name}: {str(e)}", flush=True)
+            results.append({
+                "model": model_name,
+                "status": "exception",
+                "error": str(e)
+            })
         
-        print(f"\n[PHASE 1 COMPLETE] All {len(linear_models)} linear models finished.", flush=True)
+        remaining = len(all_scripts) - idx
+        if remaining > 0:
+            elapsed_total = time.time() - start_time
+            avg_time = elapsed_total / idx
+            estimated_remaining = avg_time * remaining
+            print(f"\n[PROGRESS] {idx}/{len(all_scripts)} models completed.")
+            print(f"          Estimated time remaining: {estimated_remaining/60:.1f} minutes", flush=True)
     
-    # ================================================================
-    # PHASE 2: Skip demanding models (random forest and above)
-    # ================================================================
-    if demanding_models:
-        print("\n" + "=" * 70)
-        print("SKIPPING DEMANDING MODELS")
-        print("=" * 70)
-        print(f"Skipping {len(demanding_models)} models (random forest and above):")
-        for script in demanding_models:
-            print(f"  - {script.name}")
-        print("=" * 70, flush=True)
+    print(f"\n[ALL MODELS COMPLETE] All {len(all_scripts)} models finished.", flush=True)
     
     total_time = time.time() - start_time
     

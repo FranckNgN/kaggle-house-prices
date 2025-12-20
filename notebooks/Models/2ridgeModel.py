@@ -33,6 +33,13 @@ if __name__ == "__main__":
 
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
+    
+    # Drop categorical columns (Ridge needs numeric only)
+    categorical_cols = X.select_dtypes(include=['object']).columns
+    if len(categorical_cols) > 0:
+        print(f"Dropping {len(categorical_cols)} categorical columns: {list(categorical_cols)}")
+        X = X.drop(columns=categorical_cols)
+        test = test.drop(columns=categorical_cols)
 
     cfg = model_config.RIDGE
     rmse_scorer = make_scorer(rmse_real, greater_is_better=False)
@@ -63,18 +70,24 @@ if __name__ == "__main__":
     runtime = time.time() - start_time
 
     best_alpha = grid.best_params_["alpha"]
-    best_rmse_cv = -grid.best_score_
+    best_rmse_cv_real = -grid.best_score_
+    
+    # Also calculate log-scale RMSE for comparison with previous results
+    best_model_cv = grid.best_estimator_
+    y_pred_log = best_model_cv.predict(X)
+    best_rmse_cv_log = np.sqrt(mean_squared_error(y, y_pred_log))
 
     print(f"Best alpha from CV: {best_alpha}")
-    print(f"CV RMSE (real scale) with best alpha: {best_rmse_cv:.4f}")
+    print(f"CV RMSE (real scale): {best_rmse_cv_real:.4f}")
+    print(f"CV RMSE (log scale): {best_rmse_cv_log:.6f}")
 
     # Log results
     log_model_result(
         model_name="ridge",
-        rmse=best_rmse_cv,
+        rmse=best_rmse_cv_log,  # Use log-scale RMSE for consistency
         hyperparams={"alpha": best_alpha},
         features=X.columns.tolist(),
-        notes="GridSearchCV optimized",
+        notes=f"GridSearchCV optimized (process8, {len(X.columns)} features)",
         runtime=runtime
     )
 

@@ -59,8 +59,16 @@ if __name__ == "__main__":
 
 
 
+    # Outlier removal: Remove houses with very large living area but low price
+    # This is a domain-specific outlier (likely data error)
     outlier_mask = (train['GrLivArea'] > 4000) & (train['SalePrice'] < 300000)
+    n_outliers_removed = outlier_mask.sum()
     train = train.loc[~outlier_mask]
+    
+    if n_outliers_removed > 0:
+        print(f"Removed {n_outliers_removed} outlier(s): GrLivArea > 4000 & SalePrice < 300000")
+    else:
+        print("No outliers removed")
 
     # --- Feature Creation (Pre-Skewness) ---
     def add_basic_features(df: pd.DataFrame) -> pd.DataFrame:

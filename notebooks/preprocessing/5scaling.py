@@ -28,12 +28,22 @@ if __name__ == "__main__":
     cols_to_scale = [col for col in train_numeric.columns if is_continuous(X_train[col], 0.05)]
 
     print(f"Scaling {len(cols_to_scale)} continuous columns...")
-    scaler = StandardScaler()
-
-    for col in X_train.columns:
-        if col in cols_to_scale:
-            X_train[col] = scaler.fit_transform(X_train[[col]])
-            X_test[col] = scaler.transform(X_test[[col]])
+    
+    # Fit scaler on training data only, then transform both train and test
+    # This prevents data leakage (test data doesn't influence scaling parameters)
+    if cols_to_scale:
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train[cols_to_scale])
+        X_test_scaled = scaler.transform(X_test[cols_to_scale])
+        
+        # Update scaled columns
+        for i, col in enumerate(cols_to_scale):
+            X_train[col] = X_train_scaled[:, i]
+            X_test[col] = X_test_scaled[:, i]
+        
+        print(f"  Scaled columns: {cols_to_scale[:10]}{'...' if len(cols_to_scale) > 10 else ''}")
+    else:
+        print("  No continuous columns to scale")
 
     X_train = pd.concat([X_train, y], axis=1)
 

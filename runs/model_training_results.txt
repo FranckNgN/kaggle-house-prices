@@ -1,87 +1,159 @@
 MODEL TRAINING RESULTS
 ======================================================================
-Total execution time: 53.8s
-Successful: 4/5
+Total execution time: 58.8s
+Successful: 5/12
 
 
 0linearRegression: success
-  Time: 2.4s
+  Time: 1.2s
   Error:
-D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [LinearRegression] Predictions in log scale have suspicious range: min=10.88, max=224.06
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [LinearRegression] Predictions in log scale have suspicious range: min=10.84, max=268.52
   warnings.warn(
 
 
-1linearRegUpdated: failed
-  Time: 16.4s
+10blendingModel: failed
+  Time: 1.1s
   Error:
 Traceback (most recent call last):
   File "<string>", line 8, in <module>
-  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\1linearRegUpdated.py", line 74, in <module>
-    validate_submission_wrapper(submission, len(test), "LinearRegressionUpdated", test_ids=submission["Id"])
-  File "D:\Project\Kaggle\house-prices-starter\utils\model_wrapper.py", line 108, in validate_submission_wrapper
-    return validate_submission(submission, expected_test_size, model_name, test_ids)
-  File "D:\Project\Kaggle\house-prices-starter\utils\model_validation.py", line 149, in validate_submission
-    check_submission_format(submission, expected_test_size)
-  File "D:\Project\Kaggle\house-prices-starter\utils\checks.py", line 469, in check_submission_format
-    raise DataIntegrityError("Submission has non-positive SalePrice values")
-utils.checks.DataIntegrityError: Submission has non-positive SalePrice values
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\10blendingModel.py", line 282, in <module>
+    main(optimize_weights=True)
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\10blendingModel.py", line 216, in main
+    predictions = load_predictions(cfg)
+                  ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\10blendingModel.py", line 154, in load_predictions
+    raise FileNotFoundError("No prediction files found in submissions directory.")
+FileNotFoundError: No prediction files found in submissions directory.
 
+
+11stackingModel: failed
+  Time: 4.0s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\11stackingModel.py", line 108, in <module>
+    model.fit(X_train, y_train)
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 774, in inner_f
+    return func(**kwargs)
+           ^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\sklearn.py", line 1343, in fit
+    train_dmatrix, evals = _wrap_evaluation_matrices(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\sklearn.py", line 702, in _wrap_evaluation_matrices
+    train_dmatrix = create_dmatrix(
+                    ^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\sklearn.py", line 1257, in _create_dmatrix
+    return QuantileDMatrix(
+           ^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 774, in inner_f
+    return func(**kwargs)
+           ^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 1768, in __init__
+    self._init(
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 1832, in _init
+    it.reraise()
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 617, in reraise
+    raise exc  # pylint: disable=raising-bad-type
+    ^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 598, in _handle_exception
+    return fn()
+           ^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 685, in <lambda>
+    return self._handle_exception(lambda: int(self.next(input_data)), 0)
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\data.py", line 1632, in next
+    input_data(**self.kwargs)
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 774, in inner_f
+    return func(**kwargs)
+           ^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\core.py", line 665, in input_data
+    new, feature_names, feature_types = _proxy_transform(
+                                        ^^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\data.py", line 1659, in _proxy_transform
+    data, _ = _ensure_np_dtype(data, data.dtype)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Project\Kaggle\house-prices-starter\.venv\Lib\site-packages\xgboost\_data_utils.py", line 384, in _ensure_np_dtype
+    data = data.astype(dtype, copy=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: 'CollgCr'
+
+
+1linearRegUpdated: success
+  Time: 1.5s
 
 2ridgeModel: success
-  Time: 18.1s
+  Time: 4.4s
   Error:
-D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [Ridge] Predictions in log scale have suspicious range: min=10.68, max=66.27
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [Ridge] Predictions in log scale have suspicious range: min=10.69, max=271.18
   warnings.warn(
 
 
 3lassoModel: success
-  Time: 20.2s
-  Error:
-D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [Lasso] Predictions in log scale have suspicious range: min=10.95, max=87.68
-  warnings.warn(
-
+  Time: 4.5s
 
 4elasticNetModel: success
-  Time: 53.7s
+  Time: 35.7s
   Error:
-D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [ElasticNet] Predictions in log scale have suspicious range: min=10.59, max=36.22
+D:\Project\Kaggle\house-prices-starter\utils\checks.py:430: UserWarning: [ElasticNet] Predictions in log scale have suspicious range: min=10.59, max=174.78
   warnings.warn(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.06826194419535803, tolerance: 0.017984318163050586
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.29075088061310517, tolerance: 0.017984318163050586
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3553041003276789, tolerance: 0.018865872200340368
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.0203950066154346, tolerance: 0.018865872200340368
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.17514154582764174, tolerance: 0.019043454545344375
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.11031090155436729, tolerance: 0.01886202447492945
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3107291940588306, tolerance: 0.01886202447492945
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.12625790347109067, tolerance: 0.018865872200340368
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.1052863082923281, tolerance: 0.019043454545344375
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.3218692565336978, tolerance: 0.01835586363498732
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.018083013316035235, tolerance: 0.017984318163050586
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.04134978385584276, tolerance: 0.017984318163050586
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 1.455310289942724, tolerance: 0.01886202447492945
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.032138256639484, tolerance: 0.019043454545344375
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 1.6138592069023234, tolerance: 0.01835586363498732
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.29773314893153024, tolerance: 0.019043454545344375
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.03765790947155523, tolerance: 0.018865872200340368
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 2.1127031991838883, tolerance: 0.01835586363498732
-  model = cd_fast.enet_coordinate_descent(
-C:\Users\Franck\AppData\Local\Programs\Python\Python38\lib\site-packages\sklearn\linear_model\_coordinate_descent.py:530: ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations. Duality gap: 0.6796534981855515, tolerance: 0.01835586363498732
-  model = cd_fast.enet_coordinate_descent(
+
+
+5randomForestModel: failed
+  Time: 1.4s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\5randomForestModel.py", line 11, in <module>
+    from utils.optimization import run_optuna_study
+  File "D:\Project\Kaggle\house-prices-starter\utils\optimization.py", line 2, in <module>
+    import optuna
+ModuleNotFoundError: No module named 'optuna'
+
+
+6svrModel: failed
+  Time: 1.2s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\6svrModel.py", line 11, in <module>
+    from utils.optimization import run_optuna_study
+  File "D:\Project\Kaggle\house-prices-starter\utils\optimization.py", line 2, in <module>
+    import optuna
+ModuleNotFoundError: No module named 'optuna'
+
+
+7XGBoostModel: failed
+  Time: 1.1s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\7XGBoostModel.py", line 12, in <module>
+    from utils.optimization import run_optuna_study
+  File "D:\Project\Kaggle\house-prices-starter\utils\optimization.py", line 2, in <module>
+    import optuna
+ModuleNotFoundError: No module named 'optuna'
+
+
+8lightGbmModel: failed
+  Time: 1.2s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\8lightGbmModel.py", line 12, in <module>
+    from utils.optimization import run_optuna_study
+  File "D:\Project\Kaggle\house-prices-starter\utils\optimization.py", line 2, in <module>
+    import optuna
+ModuleNotFoundError: No module named 'optuna'
+
+
+9catBoostModel: failed
+  Time: 1.5s
+  Error:
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+  File "D:\Project\Kaggle\house-prices-starter\notebooks\Models\9catBoostModel.py", line 12, in <module>
+    from utils.optimization import run_optuna_study
+  File "D:\Project\Kaggle\house-prices-starter\utils\optimization.py", line 2, in <module>
+    import optuna
+ModuleNotFoundError: No module named 'optuna'
 

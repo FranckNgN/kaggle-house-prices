@@ -141,63 +141,9 @@ def add_kmeans_clusters(
     return train, test
 
 
-def add_neighborhood_price_stats(
-    train: pd.DataFrame,
-    test: pd.DataFrame,
-    target_col: str = "logSP",
-    n_splits: int = 5,
-    random_state: int = 42
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Add neighborhood price statistics using cross-validated target encoding."""
-    if "Neighborhood" not in train.columns or target_col not in train.columns:
-        return train, test
-    
-    global_mean = train[target_col].mean()
-    global_std = train[target_col].std()
-    global_median = train[target_col].median()
-    
-    for stat in ["mean", "median", "std", "min", "max"]:
-        train[f"Neighborhood_{stat}_logSP"] = np.nan
-        test[f"Neighborhood_{stat}_logSP"] = np.nan
-    
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    
-    for fold, (train_idx, val_idx) in enumerate(kf.split(train)):
-        train_fold = train.iloc[train_idx]
-        val_fold = train.iloc[val_idx]
-        
-        neighborhood_stats = train_fold.groupby("Neighborhood")[target_col].agg([
-            "mean", "median", "std", "min", "max"
-        ]).fillna({
-            "mean": global_mean,
-            "median": global_median,
-            "std": global_std,
-            "min": train_fold[target_col].min(),
-            "max": train_fold[target_col].max()
-        })
-        
-        for stat in ["mean", "median", "std", "min", "max"]:
-            val_encoded = val_fold["Neighborhood"].map(neighborhood_stats[stat]).fillna(
-                global_mean if stat == "mean" else (global_median if stat == "median" else global_std)
-            )
-            train.loc[val_fold.index, f"Neighborhood_{stat}_logSP"] = val_encoded
-    
-    neighborhood_stats = train.groupby("Neighborhood")[target_col].agg([
-        "mean", "median", "std", "min", "max"
-    ]).fillna({
-        "mean": global_mean,
-        "median": global_median,
-        "std": global_std,
-        "min": train[target_col].min(),
-        "max": train[target_col].max()
-    })
-    
-    for stat in ["mean", "median", "std", "min", "max"]:
-        test[f"Neighborhood_{stat}_logSP"] = test["Neighborhood"].map(neighborhood_stats[stat]).fillna(
-            global_mean if stat == "mean" else (global_median if stat == "median" else global_std)
-        )
-    
-    return train, test
+# NOTE: add_neighborhood_price_stats moved to stage 8 (target encoding)
+# to ensure proper order: feature selection -> target encoding
+# This prevents data leakage and ensures target encoding happens on selected features
 
 
 def add_polynomial_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
@@ -272,9 +218,7 @@ def add_temporal_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         df["EndOfYear"] = ((df["MoSold"] >= 11) | (df["MoSold"] <= 1)).astype(int)
         created_features.append("EndOfYear")
     
-    if "Age" in df.columns:
-        df["AgeAtSale"] = df["Age"]
-        created_features.append("AgeAtSale")
+    # AgeAtSale removed - redundant duplicate of Age column
     
     return df, created_features
 
@@ -407,9 +351,8 @@ def add_interaction_features_advanced(df: pd.DataFrame) -> Tuple[pd.DataFrame, L
     
     # Age × Quality interactions (maintenance effect)
     if "Age" in df.columns:
-        if "OverallCond" in df.columns:
-            df["Age_x_Condition"] = df["Age"] * df["OverallCond"]
-            created_features.append("Age_x_Condition")
+        # NOTE: Age_x_Condition removed - duplicate of Cond_x_Age (created earlier)
+        # Both are OverallCond * Age (multiplication is commutative)
         if "OverallQual" in df.columns:
             df["Age_x_Quality"] = df["Age"] * df["OverallQual"]
             created_features.append("Age_x_Quality")
@@ -418,21 +361,13 @@ def add_interaction_features_advanced(df: pd.DataFrame) -> Tuple[pd.DataFrame, L
             created_features.append("Age_x_Size")
     
     # Location × Features (neighborhood premium)
-    if "Neighborhood_mean_logSP" in df.columns:
-        if "OverallQual" in df.columns:
-            df["Neighborhood_x_Qual"] = df["Neighborhood_mean_logSP"] * df["OverallQual"]
-            created_features.append("Neighborhood_x_Qual")
-        if "TotalSF" in df.columns:
-            df["Neighborhood_x_Size"] = df["Neighborhood_mean_logSP"] * df["TotalSF"]
-            created_features.append("Neighborhood_x_Size")
-        if "Age" in df.columns:
-            df["Neighborhood_x_Age"] = df["Neighborhood_mean_logSP"] * df["Age"]
-            created_features.append("Neighborhood_x_Age")
+    # NOTE: Neighborhood_mean_logSP doesn't exist until Stage 8 (target encoding)
+    # These interaction features should be created in Stage 8 after target encoding
+    # Removed to avoid dead code that never executes
     
     # Size × Efficiency interactions
-    if "TotalSF" in df.columns and "OverallQual" in df.columns:
-        df["SF_x_Qual"] = df["TotalSF"] * df["OverallQual"]
-        created_features.append("SF_x_Qual")
+    # NOTE: SF_x_Qual removed - duplicate of Qual_x_TotalSF (created earlier)
+    # Both are OverallQual * TotalSF (multiplication is commutative)
     
     if "GrLivArea" in df.columns and "TotalBath" in df.columns:
         df["Living_x_Bath"] = df["GrLivArea"] * df["TotalBath"]
@@ -524,9 +459,8 @@ def main() -> None:
 
     print("\nAdding advanced features...")
     
-    # Neighborhood price statistics (target-encoded)
-    print("  - Neighborhood price statistics...")
-    train, test = add_neighborhood_price_stats(train, test, target_col="logSP")
+    # NOTE: Neighborhood price statistics moved to stage 8 (target encoding)
+    # to prevent data leakage and ensure proper order
     
     # Polynomial features
     print("  - Polynomial features...")
@@ -564,7 +498,7 @@ def main() -> None:
         "luxury_flags": ["HasPool", "Has2ndFlr", "HasGarage", "HasBsmt", "HasFireplace"],
         "interactions": ["Qual_x_TotalSF", "Kitchen_x_TotalSF", "Cond_x_Age"],
         "benchmarks": ["Neighborhood", "MSSubClass", "MSZoning", "OverallQual", "Decade"],
-        "neighborhood_stats": 5,
+        "note": "Neighborhood price stats moved to stage 8 (target encoding) to prevent leakage",
         "polynomial_features": len(poly_features),
         "ratio_features": len(ratio_features),
         "temporal_features": len(temporal_features),

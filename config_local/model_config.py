@@ -80,7 +80,8 @@ ELASTIC_NET = {
         0.002, 0.005, 0.01
     ],
     "l1_ratios": [0.1, 0.3, 0.5, 0.7, 0.9],
-    "max_iter": 20000,
+    "max_iter": 30000,  # Increased from 20000 to help with convergence
+    "tol": 1e-3,  # More lenient tolerance (default is 1e-4) to reduce convergence warnings
     "test_size": 0.2,
     "random_state": 42,
 }
@@ -94,7 +95,7 @@ RANDOM_FOREST = {
     "base_params": {
         "random_state": 42,
         "n_jobs": -1,
-        "criterion": "mse",
+        "criterion": "squared_error",  # Changed from "mse" (deprecated in sklearn 1.3+)
     },
     "optuna_settings": {
         "n_trials": 50,  # Increased for thorough optimization (~20 min target)
@@ -165,7 +166,7 @@ XGBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 40,  # Increased for thorough optimization (~20 min target)
+        "n_trials": 20,  # Optimized for ~1 hour runtime (15-20 trials with 5-fold CV)
         "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
@@ -215,7 +216,7 @@ LIGHTGBM = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 40,  # Increased for thorough optimization (~20 min target)
+        "n_trials": 20,  # Optimized for ~1 hour runtime (15-20 trials with 5-fold CV)
         "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
@@ -257,16 +258,16 @@ CATBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 30,  # Increased for thorough optimization (~20 min target)
-        "n_splits": 5,  # Full 5-fold CV for better validation
+        "n_trials": 10,  # Reduced for ~1 hour runtime (10 trials with 3-fold CV)
+        "n_splits": 3,  # Reduced from 5 to 3 for faster runtime while maintaining quality
         "random_state": 42,
     },
     # Optuna search space
     "optuna_space": {
-        "iterations": (800, 2500),  # Increased range for better optimization
-        "learning_rate": (0.01, 0.1, "log"),
-        "depth": (4, 10),  # Full depth range
-        "l2_leaf_reg": (1, 10),
+        "iterations": (500, 1200),  # Reduced from (800, 2500) for faster training
+        "learning_rate": (0.02, 0.08, "log"),  # Narrowed range, higher min for faster convergence
+        "depth": (4, 7),  # Reduced from (4, 10) - depth 10 is very slow
+        "l2_leaf_reg": (1, 8),
         "bagging_temperature": (0, 1),
         "random_strength": (0, 1),
     },

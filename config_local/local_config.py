@@ -26,6 +26,8 @@ TRAIN_PROCESS3_CSV = INTERIM_TRAIN_DIR / "train_process3.csv"
 TRAIN_PROCESS4_CSV = INTERIM_TRAIN_DIR / "train_process4.csv"
 TRAIN_PROCESS5_CSV = INTERIM_TRAIN_DIR / "train_process5.csv"
 TRAIN_PROCESS6_CSV = INTERIM_TRAIN_DIR / "train_process6.csv"
+TRAIN_PROCESS7_CSV = INTERIM_TRAIN_DIR / "train_process7.csv"
+TRAIN_PROCESS8_CSV = INTERIM_TRAIN_DIR / "train_process8.csv"
 
 # Interim - Test files
 TEST_PROCESS1_CSV = INTERIM_TEST_DIR / "test_process1.csv"
@@ -34,6 +36,8 @@ TEST_PROCESS3_CSV = INTERIM_TEST_DIR / "test_process3.csv"
 TEST_PROCESS4_CSV = INTERIM_TEST_DIR / "test_process4.csv"
 TEST_PROCESS5_CSV = INTERIM_TEST_DIR / "test_process5.csv"
 TEST_PROCESS6_CSV = INTERIM_TEST_DIR / "test_process6.csv"
+TEST_PROCESS7_CSV = INTERIM_TEST_DIR / "test_process7.csv"
+TEST_PROCESS8_CSV = INTERIM_TEST_DIR / "test_process8.csv"
 
 # Processed
 FEATURE_SUMMARY_CSV = PROCESSED_DIR / "feature_summary.csv"

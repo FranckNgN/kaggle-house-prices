@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
 from typing import List, Tuple
 import config_local.local_config as local_config
 from utils.engineering import update_engineering_summary
@@ -274,15 +275,119 @@ def main() -> None:
     neighborhood_stats_cols = [col for col in train.columns if "Neighborhood_" in col and "_logSP" in col]
     all_encoded_cols = encoded_cols + neighborhood_stats_cols
     
+    # ================================================================
+    # DROP ORIGINAL CATEGORICAL COLUMNS (replaced by target-encoded versions)
+    # ================================================================
+    # After target encoding, the original categorical columns are redundant
+    # and cause issues for tree models that can't handle object/string columns
+    print(f"\nDropping original categorical columns (replaced by target-encoded versions)...")
+    cols_to_drop = []
+    
+    # Drop Neighborhood if we created Neighborhood statistics
+    if "Neighborhood" in train.columns and neighborhood_stats_cols:
+        cols_to_drop.append("Neighborhood")
+    
+    # Drop columns that were target-encoded (they now have _TargetEnc versions)
+    for col in available_cols:
+        if col in train.columns:
+            cols_to_drop.append(col)
+    
+    if cols_to_drop:
+        print(f"  Dropping {len(cols_to_drop)} original categorical columns: {cols_to_drop}")
+        train = train.drop(columns=cols_to_drop, errors='ignore')
+        test = test.drop(columns=cols_to_drop, errors='ignore')
+        print(f"  ✓ Removed redundant categorical columns")
+    else:
+        print(f"  No original categorical columns to drop")
+    
     # Log engineering details
     update_engineering_summary("Target Encoding", {
         "encoded_features": all_encoded_cols,
         "neighborhood_stats": len(neighborhood_stats_cols),
         "other_target_encoded": len(encoded_cols),
+        "dropped_original_cols": cols_to_drop,
         "n_splits": 5,
         "smoothing": 1.0,
         "noise_level": 0.01
     })
+    
+    # ================================================================
+    # CRITICAL: Scale newly created target-encoded features
+    # ================================================================
+    # Target-encoded features are NEW numeric features created AFTER stage 5 scaling
+    # They need to be scaled for linear models (ElasticNet, Ridge, Lasso) to converge properly
+    print(f"\nScaling newly created target-encoded features...")
+    
+    # Identify all target-encoded numeric features that need scaling
+    # These are continuous numeric features (not binary 0/1 from one-hot encoding)
+    target_encoded_numeric = all_encoded_cols  # All target-encoded features are numeric
+    
+    if target_encoded_numeric:
+        # Filter to only columns that exist and are numeric
+        cols_to_scale = [col for col in target_encoded_numeric 
+                        if col in train.columns and pd.api.types.is_numeric_dtype(train[col])]
+        
+        if cols_to_scale:
+            print(f"  Scaling {len(cols_to_scale)} target-encoded features: {cols_to_scale[:5]}{'...' if len(cols_to_scale) > 5 else ''}")
+            
+            # Fit scaler on training data only, then transform both train and test
+            scaler = StandardScaler()
+            train_scaled = scaler.fit_transform(train[cols_to_scale])
+            test_scaled = scaler.transform(test[cols_to_scale])
+            
+            # Update scaled columns
+            for i, col in enumerate(cols_to_scale):
+                train[col] = train_scaled[:, i]
+                test[col] = test_scaled[:, i]
+            
+            print(f"  ✓ Scaled target-encoded features for proper linear model convergence")
+        else:
+            print(f"  No target-encoded numeric features found to scale")
+    else:
+        print(f"  No target-encoded features to scale")
+    
+    # ================================================================
+    # CREATE NEIGHBORHOOD INTERACTION FEATURES (after target encoding)
+    # ================================================================
+    # These features depend on Neighborhood_mean_logSP which is created above
+    print(f"\nCreating Neighborhood interaction features...")
+    interaction_features_created = []
+    
+    if "Neighborhood_mean_logSP" in train.columns:
+        # Neighborhood × Quality interactions
+        if "OverallQual" in train.columns:
+            train["Neighborhood_x_Qual"] = train["Neighborhood_mean_logSP"] * train["OverallQual"]
+            test["Neighborhood_x_Qual"] = test["Neighborhood_mean_logSP"] * test["OverallQual"]
+            interaction_features_created.append("Neighborhood_x_Qual")
+        
+        # Neighborhood × Size interactions
+        if "TotalSF" in train.columns:
+            train["Neighborhood_x_Size"] = train["Neighborhood_mean_logSP"] * train["TotalSF"]
+            test["Neighborhood_x_Size"] = test["Neighborhood_mean_logSP"] * test["TotalSF"]
+            interaction_features_created.append("Neighborhood_x_Size")
+        
+        # Neighborhood × Age interactions
+        if "Age" in train.columns:
+            train["Neighborhood_x_Age"] = train["Neighborhood_mean_logSP"] * train["Age"]
+            test["Neighborhood_x_Age"] = test["Neighborhood_mean_logSP"] * test["Age"]
+            interaction_features_created.append("Neighborhood_x_Age")
+        
+        if interaction_features_created:
+            print(f"  Created {len(interaction_features_created)} Neighborhood interaction features: {interaction_features_created}")
+            # Scale these new interaction features (they're continuous numeric)
+            scaler = StandardScaler()
+            train_scaled = scaler.fit_transform(train[interaction_features_created])
+            test_scaled = scaler.transform(test[interaction_features_created])
+            
+            for i, col in enumerate(interaction_features_created):
+                train[col] = train_scaled[:, i]
+                test[col] = test_scaled[:, i]
+            
+            print(f"  ✓ Scaled Neighborhood interaction features")
+        else:
+            print(f"  No Neighborhood interaction features created (missing dependencies)")
+    else:
+        print(f"  Skipping Neighborhood interactions (Neighborhood_mean_logSP not found)")
     
     # Save to new stage (process 8)
     print(f"\nSaving Processed 8 data...")
