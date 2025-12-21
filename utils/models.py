@@ -91,40 +91,72 @@ def create_submission(
     predictions: np.ndarray,
     test_ids: pd.Series,
     filename: str,
-    log_space: bool = True
+    log_space: bool = True,
+    model_name: Optional[str] = None,
+    validate: bool = True
 ) -> pd.DataFrame:
     """
     Create Kaggle submission file.
+    Enhanced with validation and better path handling.
     
     Args:
         predictions: Model predictions
         test_ids: Test set IDs
         filename: Output filename
         log_space: If True, predictions are in log space
+        model_name: Optional model name for better path organization
+        validate: If True, validate submission format
         
     Returns:
         Submission DataFrame
+        
+    Raises:
+        ImportError: If config_local is not available
+        ValueError: If validation fails
     """
     if cfg is None:
         raise ImportError("config_local not available")
     
+    # Convert predictions from log space if needed
     if log_space:
         predictions = np.expm1(predictions)
+    
+    # Validate predictions
+    if validate:
+        if len(predictions) != len(test_ids):
+            raise ValueError(
+                f"Predictions length ({len(predictions)}) doesn't match test_ids length ({len(test_ids)})"
+            )
+        if np.any(predictions <= 0):
+            raise ValueError(f"Found {np.sum(predictions <= 0)} non-positive predictions")
+        if np.any(np.isnan(predictions)) or np.any(np.isinf(predictions)):
+            raise ValueError("Found NaN or Inf values in predictions")
     
     submission = pd.DataFrame({
         "Id": test_ids,
         "SalePrice": predictions
     })
     
+    # Determine output path
     if hasattr(cfg, "get_model_submission_path"):
-        # Attempt to get a better path if model name can be inferred from filename
-        model_name = filename.split("_")[0].split(".")[0]
-        output_path = cfg.get_model_submission_path(model_name, filename)
+        if model_name:
+            output_path = cfg.get_model_submission_path(model_name, filename)
+        else:
+            # Attempt to infer model name from filename
+            model_name = filename.split("_")[0].split(".")[0]
+            output_path = cfg.get_model_submission_path(model_name, filename)
     else:
         output_path = cfg.SUBMISSIONS_DIR / filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+    
+    # Save submission
     submission.to_csv(output_path, index=False)
+    
+    if validate:
+        print(f"[SUCCESS] Submission saved: {output_path}")
+        print(f"  Predictions: {len(predictions)} rows")
+        print(f"  Price range: ${predictions.min():,.0f} - ${predictions.max():,.0f}")
+        print(f"  Mean price: ${predictions.mean():,.0f}")
     
     return submission
 

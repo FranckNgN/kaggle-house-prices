@@ -1,0 +1,16 @@
+LEADERBOARD DISTRIBUTION SUMMARY
+======================================================================
+
+    Total Participants: 6,071
+    Score Range: 0.000000 - 22.661020
+    Median Score: 0.139840
+    Mean Score: 0.313757
+    
+    
+    Your Position:
+    Rank: 1,276 / 6,071
+    Score: 0.126090
+    Percentile: 79.00%
+    (Better than 79.00% of participants)
+    
+======================================================================

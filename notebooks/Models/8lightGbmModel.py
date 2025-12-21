@@ -24,12 +24,6 @@ if __name__ == "__main__":
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
     
-    # Drop categorical columns - tree models need numeric data (target-encoded versions are already included)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns (target-encoded versions available): {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.LIGHTGBM
     opt_cfg = cfg["optuna_settings"]

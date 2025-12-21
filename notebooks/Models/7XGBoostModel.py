@@ -23,13 +23,6 @@ if __name__ == "__main__":
 
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
-    
-    # Drop categorical columns - tree models need numeric data (target-encoded versions are already included)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns (target-encoded versions available): {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.XGBOOST
     opt_cfg = cfg["optuna_settings"]
@@ -79,12 +72,19 @@ if __name__ == "__main__":
     
     test_pred_real = np.expm1(test_pred_log)
 
-    submission = load_sample_submission()
-    submission["SalePrice"] = test_pred_real
+    # Create submission using enhanced utility
+    from utils.models import create_submission
+    submission = create_submission(
+        predictions=test_pred_log,
+        test_ids=load_sample_submission()["Id"],
+        filename=cfg["submission_filename"],
+        log_space=True,
+        model_name=cfg["submission_name"],
+        validate=True
+    )
 
-    # Validate submission format and ID matching
+    # Additional validation for compatibility
     validate_submission_wrapper(submission, len(test), "XGBoost", test_ids=submission["Id"])
-
+    
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
-    submission.to_csv(out_path, index=False)
     print(f"Submission saved: {out_path}")

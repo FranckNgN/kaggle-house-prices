@@ -25,12 +25,6 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
     
-    # Drop categorical columns for linear models (tree models can handle them)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.ELASTIC_NET
     

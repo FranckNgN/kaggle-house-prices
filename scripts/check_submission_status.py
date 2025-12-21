@@ -16,21 +16,6 @@ import config_local.local_config as config
 from utils.kaggle_helper import load_submission_log, get_available_submissions
 
 
-def get_available_submissions_dict():
-    """Get list of available submission CSV files as a dict (for backward compatibility)."""
-    submissions_list = get_available_submissions(PROJECT_ROOT)
-    submissions = {}
-    for sub in submissions_list:
-        # Normalize model name for comparison
-        key = sub['name'].lower()
-        submissions[key] = {
-            "file": sub['name'],
-            "path": sub['path'],
-            "model": sub['model']
-        }
-    return submissions
-
-
 def get_submitted_today():
     """Get models submitted today."""
     log = load_submission_log()
@@ -56,7 +41,16 @@ def main():
     print("=" * 70)
     
     # Get available and submitted models
-    available = get_available_submissions_dict()
+    submissions_list = get_available_submissions(PROJECT_ROOT)
+    # Convert to dict format for compatibility
+    available = {}
+    for sub in submissions_list:
+        key = sub['name'].lower()
+        available[key] = {
+            "file": sub['name'],
+            "path": sub['path'],
+            "model": sub['model']
+        }
     submitted_today = get_submitted_today()
     
     print(f"\nTotal available models: {len(available)}")

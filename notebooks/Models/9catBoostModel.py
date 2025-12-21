@@ -24,12 +24,6 @@ if __name__ == "__main__":
     y = train["logSP"]
     X = train.drop(columns=["logSP"])
     
-    # Drop categorical columns - use target-encoded versions instead (more informative)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns (target-encoded versions available): {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.CATBOOST
     opt_cfg = cfg["optuna_settings"]
@@ -127,14 +121,21 @@ if __name__ == "__main__":
     print(f"  Predictions range: ${test_pred_real.min():,.0f} - ${test_pred_real.max():,.0f}")
     print(f"  Mean prediction: ${test_pred_real.mean():,.0f}")
 
-    submission = load_sample_submission()
-    submission["SalePrice"] = test_pred_real
+    # Create submission using enhanced utility
+    from utils.models import create_submission
+    submission = create_submission(
+        predictions=test_pred_log,
+        test_ids=load_sample_submission()["Id"],
+        filename=cfg["submission_filename"],
+        log_space=True,
+        model_name=cfg["submission_name"],
+        validate=True
+    )
 
-    # Validate submission format and ID matching
+    # Additional validation for compatibility
     validate_submission_wrapper(submission, len(test), "CatBoost", test_ids=submission["Id"])
-
+    
     out_path = local_config.get_model_submission_path(cfg["submission_name"], cfg["submission_filename"])
-    submission.to_csv(out_path, index=False)
     
     total_runtime = time.time() - start_time
     

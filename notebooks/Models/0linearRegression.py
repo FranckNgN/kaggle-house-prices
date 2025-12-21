@@ -24,12 +24,6 @@ if __name__ == "__main__":
     X = train.drop(columns=['logSP'])
     X_test = test
 
-    # Drop categorical columns for linear models (tree models can handle them)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        X_test = X_test.select_dtypes(include=['number'])
 
     print(f"Features: {X.shape[1]} features")
     print(f"Target: logSP (log1p-transformed SalePrice)")

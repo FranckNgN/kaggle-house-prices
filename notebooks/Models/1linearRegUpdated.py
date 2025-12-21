@@ -22,12 +22,6 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
     
-    # Drop categorical columns for linear models (tree models can handle them)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.LINEAR_REGRESSION_UPDATED
     kf = KFold(
@@ -66,12 +60,15 @@ if __name__ == "__main__":
     final_model.fit(X, y)
 
     test_pred_log = final_model.predict(test)
-    test_pred_log = np.clip(test_pred_log, 0, 15)
+    # Clip to reasonable log space bounds (log1p of $10k to $2M)
+    test_pred_log = np.clip(test_pred_log, np.log1p(10000), np.log1p(2000000))
     
     # Validate predictions
     validate_predictions_wrapper(test_pred_log, "LinearRegressionUpdated", target_is_log=True)
     
     test_pred = np.expm1(test_pred_log)
+    # Ensure no negative values
+    test_pred = np.clip(test_pred, 10000, 2000000)
 
     submission = load_sample_submission()
     submission["SalePrice"] = test_pred
