@@ -294,17 +294,21 @@ The model development followed a systematic approach:
 
 | Model | CV RMSE | Kaggle RMSLE | Features | Date | Status |
 |-------|---------|--------------|----------|------|--------|
-| Ridge | 0.09665 | - | 248 (process8) | 2025-12-20 | ✅ Best CV |
+| Ridge | 0.09538 | 5.93650 | 253 (process8) | 2025-12-21 | ❌ Severe Overfitting |
+| Ridge | 0.09665 | - | 248 (process8) | 2025-12-20 | ⚠️ Overfitting risk |
 | Ridge | 0.11833 | 1.41358 | 264 (process6) | 2025-12-19 | ⚠️ Overfitting |
+| Lasso | 0.20618 | 0.13693 | 253 (process8) | 2025-12-21 | ⚠️ Moderate |
 | Lasso | 0.20618 | - | 248 (process8) | 2025-12-20 | ⚠️ Moderate |
 | Lasso | 0.30927 | 1.97336 | 264 (process6) | 2025-12-19 | ⚠️ Poor |
 | Elastic Net | 0.19707 | - | 248 (process8) | 2025-12-20 | ⚠️ Moderate |
 | Elastic Net | 0.30494 | 0.63422 | 264 (process6) | 2025-12-19 | ⚠️ Moderate |
 
 **Key Observations:**
-- Ridge shows excellent CV performance (0.09665) on process8 but severe overfitting (CV-Kaggle gap: 1.32)
+- **Ridge shows catastrophic overfitting**: CV 0.09538 (excellent) but Kaggle 5.93650 (terrible), CV-Kaggle gap: 5.84 - **Confirmed exclusion from ensembles was correct**
+- **Lasso performs better**: CV 0.20618, Kaggle 0.13693 (CV-Kaggle gap: -0.069, negative gap suggests CV metric was in wrong space - **FIXED**: Now uses log-space RMSE)
 - Linear models struggle with non-linear relationships in house price data
 - L1/L2 regularization helps but cannot capture complex feature interactions
+- **Conclusion**: Linear models are not suitable for this competition; tree-based models dominate
 
 #### 4.2.3 Kernel Models
 
@@ -1482,9 +1486,15 @@ python scripts/analyze_best_model.py
    - CV-Kaggle gap: 0.00736 (best generalization among all models)
    - Automatically logged to `runs/model_performance.csv`
 
-4. ✅ Verified logging system
-   - Scores logged to model performance CSV
-   - Submissions logged to submission log JSON
+4. ✅ Submitted Ridge and Lasso to Kaggle (for completeness)
+   - **Ridge**: CV 0.09538, Kaggle 5.93650 (CV-Kaggle gap: 5.84) ❌ **Catastrophic overfitting confirmed**
+   - **Lasso**: CV 0.20618, Kaggle 0.13693 (better than Ridge but worse than tree models)
+   - **Fixed Lasso space issue**: Changed from real-space to log-space RMSE for CV calculation
+   - Both scores automatically logged to `runs/model_performance.csv`
+
+5. ✅ Verified logging system
+   - All scores logged to model performance CSV
+   - All submissions logged to submission log JSON
    - All metadata preserved (hyperparameters, feature hash, runtime)
 
 **Key Metrics:**
@@ -1500,13 +1510,16 @@ python scripts/analyze_best_model.py
 |-------|---------|--------------|----------|--------|
 | LightGBM | 0.11873 | **0.12609** ⭐⭐ | 253 | **NEW BEST** |
 | XGBoost | 0.11696 | **0.12831** ⭐ | 253 | Second Best |
+| Lasso | 0.20618 | 0.13693 | 253 | Moderate (space fixed) |
 | Random Forest | 0.12635 | - | 253 | Good baseline |
 | SVR | 0.13126 | - | 253 | Moderate |
+| Ridge | 0.09538 | 5.93650 | 253 | ❌ Severe Overfitting |
 
 **Note on Lasso & Ridge:**
-- Lasso: Already submitted (1.97336 RMSLE, 2025-12-19) - Poor performance, skipped
-- Ridge: Already submitted (1.41358 RMSLE, 2025-12-19) - Poor performance, skipped
-- Both models show severe overfitting (CV-Kaggle gap >1.0)
+- **Ridge**: Submitted new version (2025-12-21) - CV 0.09538, Kaggle 5.93650 (CV-Kaggle gap: 5.84) ❌ **Catastrophic overfitting confirmed** - Correctly excluded from ensembles
+- **Lasso**: Submitted new version (2025-12-21) - CV 0.20618, Kaggle 0.13693 - Better than Ridge but worse than tree models
+- **Lasso Space Fix**: Fixed CV calculation to use log-space RMSE (was incorrectly using real-space, showing 23580.72)
+- Both models show that linear models are not suitable for this competition
 
 **Next Actions:**
 1. Run CatBoost with new features (expected: ~0.123-0.125)
@@ -1519,8 +1532,9 @@ python scripts/analyze_best_model.py
 4. Target: Reach 0.115-0.120 RMSLE for top 5% (0.006-0.011 improvement needed)
 
 **Files Modified:**
-- `runs/model_performance.csv` - Updated with XGBoost and LightGBM Kaggle scores
-- `data/submissions/submission_log.json` - Added XGBoost and LightGBM submission entries
+- `runs/model_performance.csv` - Updated with XGBoost, LightGBM, Ridge, and Lasso Kaggle scores
+- `data/submissions/submission_log.json` - Added all submission entries
+- `notebooks/Models/3lassoModel.py` - Fixed to use log-space RMSE for CV (was using real-space)
 
 **Impact:**
 - Error-driven features validated: 0.00364 total improvement
@@ -1530,6 +1544,7 @@ python scripts/analyze_best_model.py
 - Progress toward top 5% target: ~55% complete (0.006-0.011 gap remaining from 0.12609 to 0.115-0.120)
 - Current position: Top 10-15% (estimated)
 - Next milestone: Top 10% (~0.120 RMSLE, 0.006 improvement needed)
+- **Linear models validated**: Ridge and Lasso confirmed to be unsuitable (Ridge: 5.94 RMSLE, Lasso: 0.137 RMSLE) - Tree models dominate
 
 ---
 

@@ -10,7 +10,7 @@ from sklearn.metrics import mean_squared_error, make_scorer
 from config_local import local_config
 from config_local import model_config
 from utils.data import load_sample_submission
-from utils.metrics import log_model_result, rmse_real
+from utils.metrics import log_model_result
 from utils.model_wrapper import (
     validate_predictions_wrapper,
     validate_submission_wrapper
@@ -24,15 +24,13 @@ if __name__ == "__main__":
     y = train['logSP']
     X = train.drop(['logSP'], axis=1)
     
-    # Drop categorical columns for linear models (tree models can handle them)
-    categorical_cols = X.select_dtypes(exclude=['number']).columns.tolist()
-    if categorical_cols:
-        print(f"Dropping {len(categorical_cols)} categorical columns: {categorical_cols}")
-        X = X.select_dtypes(include=['number'])
-        test = test.select_dtypes(include=['number'])
 
     cfg = model_config.LASSO
-    rmse_scorer = make_scorer(rmse_real, greater_is_better=False)
+    # Use log space RMSE scorer (target is in log space)
+    def rmse_log_scorer(y_true, y_pred):
+        return np.sqrt(mean_squared_error(y_true, y_pred))
+    
+    rmse_scorer = make_scorer(rmse_log_scorer, greater_is_better=False)
     param_grid = {"alpha": cfg["alphas"]}
 
     cv = KFold(
@@ -60,15 +58,23 @@ if __name__ == "__main__":
     runtime = time.time() - start_time
 
     best_alpha = grid.best_params_["alpha"]
-    best_rmse_cv = -grid.best_score_
+    best_rmse_cv_log = -grid.best_score_
+    
+    # Also calculate real-scale RMSE for reference
+    best_model_cv = grid.best_estimator_
+    y_pred_log = best_model_cv.predict(X)
+    y_pred_real = np.expm1(y_pred_log)
+    y_real = np.expm1(y)
+    best_rmse_cv_real = np.sqrt(mean_squared_error(y_real, y_pred_real))
 
     print(f"Best alpha from CV (Lasso): {best_alpha}")
-    print(f"CV RMSE (real scale) with best alpha (Lasso): {best_rmse_cv:.4f}")
+    print(f"CV RMSE (log scale): {best_rmse_cv_log:.6f}")
+    print(f"CV RMSE (real scale): {best_rmse_cv_real:.4f}")
 
-    # Log results
+    # Log results (use log scale RMSE for consistency with other models)
     log_model_result(
         model_name="lasso",
-        rmse=best_rmse_cv,
+        rmse=best_rmse_cv_log,
         hyperparams={"alpha": best_alpha},
         features=X.columns.tolist(),
         notes="GridSearchCV optimized",
