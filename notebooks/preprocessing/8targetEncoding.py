@@ -229,6 +229,26 @@ def main() -> None:
     # Step 1: Add Neighborhood price statistics (special case - creates multiple features)
     if "Neighborhood" in train.columns:
         train, test = add_neighborhood_price_stats(train, test, target_col="logSP")
+        
+        # Step 1b: Add Neighborhood Price per Square Foot (target-encoded)
+        if "TotalSF" in train.columns:
+            print("  Adding Neighborhood Price per Square Foot (cross-validated)...")
+            # Create price per SF in log space (logSP / TotalSF)
+            train["PricePerSF_log"] = train["logSP"] / (train["TotalSF"] + 1)
+            test["PricePerSF_log"] = test["logSP"] / (test["TotalSF"] + 1)  # Will be replaced with target encoding
+            
+            # Target encode PricePerSF by Neighborhood
+            train_encoded, test_encoded = target_encode_cv(
+                train, test, "Neighborhood", "PricePerSF_log", 
+                n_splits=5, smoothing=1.0, noise_level=0.01, random_state=42
+            )
+            train["Neighborhood_PricePerSF_TargetEnc"] = train_encoded
+            test["Neighborhood_PricePerSF_TargetEnc"] = test_encoded
+            
+            # Drop temporary column
+            train = train.drop(columns=["PricePerSF_log"])
+            test = test.drop(columns=["PricePerSF_log"])
+            print(f"    Created Neighborhood_PricePerSF_TargetEnc feature")
     
     # Step 2: Identify other categorical columns that would benefit from target encoding
     # Focus on high-cardinality or important categoricals that weren't one-hot encoded

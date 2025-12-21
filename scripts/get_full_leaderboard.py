@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from kaggle.api.kaggle_api_extended import KaggleApi
-from utils.kaggle_helper import COMPETITION_NAME, get_username
+from kaggle import COMPETITION_NAME, get_username
 
 
 def download_leaderboard_csv(competition_name: str, output_dir: Path) -> Optional[Path]:
@@ -270,7 +270,7 @@ def main():
     print(f"Username: {username}")
     
     # Get best score from submission log
-    from utils.kaggle_helper import load_submission_log
+    from kaggle import load_submission_log
     log = load_submission_log()
     best_score = None
     if log:

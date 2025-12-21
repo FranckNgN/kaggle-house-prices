@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import config_local.local_config as config
-from utils.kaggle_helper import load_submission_log, get_available_submissions
+from kaggle import load_submission_log, get_available_submissions
 
 
 def get_submitted_today():

@@ -89,7 +89,10 @@ def run_optuna_study(
         
         # Suggest parameters based on the search space
         for param_name, space in optuna_space.items():
-            if isinstance(space, tuple):
+            if isinstance(space, list):
+                # Categorical parameter (e.g., loss functions)
+                params[param_name] = trial.suggest_categorical(param_name, space)
+            elif isinstance(space, tuple):
                 low, high = space[0], space[1]
                 log = len(space) > 2 and space[2] == "log"
                 

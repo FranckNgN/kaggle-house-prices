@@ -13,7 +13,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.kaggle_helper import get_username, load_submission_log
+from kaggle import get_username, load_submission_log
 
 
 def plot_score_distribution(leaderboard_file: Path, output_file: Path):
@@ -234,4 +234,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

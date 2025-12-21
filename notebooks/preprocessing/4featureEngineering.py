@@ -201,7 +201,7 @@ def add_ratio_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
 
 def add_temporal_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """Add temporal features for year/month effects."""
+    """Add temporal features for year/month effects and market conditions."""
     created_features = []
     
     if "YrSold" in df.columns:
@@ -209,6 +209,9 @@ def add_temporal_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         created_features.append("YearsSince2006")
         df["MarketCycle"] = (df["YrSold"] - 2006) % 4
         created_features.append("MarketCycle")
+        # Market trend indicator (pre/post 2010 housing crisis recovery)
+        df["PostCrisis"] = (df["YrSold"] >= 2010).astype(int)
+        created_features.append("PostCrisis")
     
     if "MoSold" in df.columns:
         df["Quarter"] = ((df["MoSold"] - 1) // 3) + 1
@@ -217,6 +220,30 @@ def add_temporal_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         created_features.append("PeakSeason")
         df["EndOfYear"] = ((df["MoSold"] >= 11) | (df["MoSold"] <= 1)).astype(int)
         created_features.append("EndOfYear")
+        # Month as cyclical feature (sine/cosine encoding)
+        df["MonthSin"] = np.sin(2 * np.pi * df["MoSold"] / 12)
+        df["MonthCos"] = np.cos(2 * np.pi * df["MoSold"] / 12)
+        created_features.append("MonthSin")
+        created_features.append("MonthCos")
+    
+    # Remodel timing interactions with temporal features
+    if "RemodAge" in df.columns and "YrSold" in df.columns:
+        # Years since remodel at time of sale
+        df["RemodAge_AtSale"] = df["RemodAge"]
+        # Interaction: Remodel age × Market cycle
+        if "MarketCycle" in df.columns:
+            df["RemodAge_x_MarketCycle"] = df["RemodAge"] * df["MarketCycle"]
+            created_features.append("RemodAge_x_MarketCycle")
+    
+    # House age categories (Decade bins) - already created in add_era_features as "Decade"
+    # But add interactions with temporal features
+    if "Decade" in df.columns and "YrSold" in df.columns:
+        # Age of house at time of sale (relative to decade built)
+        if "YearBuilt" in df.columns:
+            df["Age_AtSale"] = df["YrSold"] - df["YearBuilt"]
+            # Interaction: Decade × Age at sale
+            df["Decade_x_AgeAtSale"] = df["Decade"] * df["Age_AtSale"]
+            created_features.append("Decade_x_AgeAtSale")
     
     # AgeAtSale removed - redundant duplicate of Age column
     
@@ -428,6 +455,48 @@ def add_interaction_features_advanced(df: pd.DataFrame) -> Tuple[pd.DataFrame, L
             created_features.append("AvgQual_x_Age")
     
     # ========================================================================
+    # THREE-WAY INTERACTIONS (Phase 2.3: Advanced Interaction Features)
+    # ========================================================================
+    
+    # Quality × Size × Age: Captures how quality value changes with size and age
+    if "OverallQual" in df.columns and "TotalSF" in df.columns and "Age" in df.columns:
+        df["Qual_x_Size_x_Age"] = df["OverallQual"] * df["TotalSF"] * df["Age"]
+        created_features.append("Qual_x_Size_x_Age")
+    
+    # Location × Quality: Neighborhood × OverallQual (if Neighborhood is numeric/encoded)
+    # Note: If Neighborhood is still categorical, this will be handled in target encoding stage
+    if "Neighborhood_QualityScore" in df.columns and "OverallQual" in df.columns:
+        df["Neighborhood_x_Quality"] = df["Neighborhood_QualityScore"] * df["OverallQual"]
+        created_features.append("Neighborhood_x_Quality")
+    
+    # Condition × Age × Quality: Multi-factor interactions
+    if "OverallCond" in df.columns and "Age" in df.columns and "OverallQual" in df.columns:
+        df["Cond_x_Age_x_Qual"] = df["OverallCond"] * df["Age"] * df["OverallQual"]
+        created_features.append("Cond_x_Age_x_Qual")
+    
+    # Bathroom × Bedroom Ratios: Efficiency metrics
+    if "TotalBath" in df.columns and "BedroomAbvGr" in df.columns:
+        df["Bath_per_Bedroom"] = df["TotalBath"] / (df["BedroomAbvGr"] + 1)
+        created_features.append("Bath_per_Bedroom")
+    if "GrLivArea" in df.columns and "BedroomAbvGr" in df.columns:
+        df["LivingArea_per_Bedroom"] = df["GrLivArea"] / (df["BedroomAbvGr"] + 1)
+        created_features.append("LivingArea_per_Bedroom")
+    
+    # Garage × Lot Interactions: Parking value by lot size
+    if "GarageArea" in df.columns and "LotArea" in df.columns:
+        df["Garage_x_Lot"] = df["GarageArea"] * df["LotArea"]
+        df["Garage_to_Lot_Ratio"] = df["GarageArea"] / (df["LotArea"] + 1)
+        created_features.append("Garage_x_Lot")
+        created_features.append("Garage_to_Lot_Ratio")
+    
+    # Basement × Above-Ground: Ratio and interaction features
+    if "TotalBsmtSF" in df.columns and "GrLivArea" in df.columns:
+        df["Bsmt_x_AboveGround"] = df["TotalBsmtSF"] * df["GrLivArea"]
+        df["Bsmt_to_AboveGround_Ratio"] = df["TotalBsmtSF"] / (df["GrLivArea"] + 1)
+        created_features.append("Bsmt_x_AboveGround")
+        created_features.append("Bsmt_to_AboveGround_Ratio")
+    
+    # ========================================================================
     # ERROR-DRIVEN FEATURES (Added 2025-12-20 based on error analysis)
     # These features address specific failure patterns identified in worst predictions
     # ========================================================================
@@ -455,6 +524,141 @@ def add_interaction_features_advanced(df: pd.DataFrame) -> Tuple[pd.DataFrame, L
     if "OverallQual" in df.columns:
         df["OverallQual_Squared"] = df["OverallQual"] ** 2
         created_features.append("OverallQual_Squared")
+    
+    return df, created_features
+
+
+def add_neighborhood_features(train: pd.DataFrame, test: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+    """
+    Add neighborhood-level features that don't require target encoding.
+    These features capture neighborhood characteristics without using SalePrice.
+    """
+    created_features = []
+    
+    # Neighborhood Quality Score: Average OverallQual by Neighborhood
+    if "Neighborhood" in train.columns and "OverallQual" in train.columns:
+        neighborhood_quality = train.groupby("Neighborhood")["OverallQual"].mean()
+        train["Neighborhood_QualityScore"] = train["Neighborhood"].map(neighborhood_quality)
+        test["Neighborhood_QualityScore"] = test["Neighborhood"].map(neighborhood_quality).fillna(
+            train["OverallQual"].mean()
+        )
+        created_features.append("Neighborhood_QualityScore")
+    
+    # Neighborhood Age Profile: Average YearBuilt by Neighborhood
+    if "Neighborhood" in train.columns and "YearBuilt" in train.columns:
+        neighborhood_age = train.groupby("Neighborhood")["YearBuilt"].mean()
+        train["Neighborhood_AvgYearBuilt"] = train["Neighborhood"].map(neighborhood_age)
+        test["Neighborhood_AvgYearBuilt"] = test["Neighborhood"].map(neighborhood_age).fillna(
+            train["YearBuilt"].mean()
+        )
+        created_features.append("Neighborhood_AvgYearBuilt")
+    
+    # Neighborhood-LotArea Interaction: Average LotArea by Neighborhood
+    if "Neighborhood" in train.columns and "LotArea" in train.columns:
+        neighborhood_lot = train.groupby("Neighborhood")["LotArea"].mean()
+        train["Neighborhood_AvgLotArea"] = train["Neighborhood"].map(neighborhood_lot)
+        test["Neighborhood_AvgLotArea"] = test["Neighborhood"].map(neighborhood_lot).fillna(
+            train["LotArea"].mean()
+        )
+        # Create interaction: how does this house's lot compare to neighborhood average
+        train["LotArea_vs_Neighborhood"] = train["LotArea"] / (train["Neighborhood_AvgLotArea"] + 1)
+        test["LotArea_vs_Neighborhood"] = test["LotArea"] / (test["Neighborhood_AvgLotArea"] + 1)
+        created_features.append("Neighborhood_AvgLotArea")
+        created_features.append("LotArea_vs_Neighborhood")
+    
+    # Neighborhood-Garage Interaction: Garage presence/value by neighborhood
+    if "Neighborhood" in train.columns and "GarageArea" in train.columns:
+        neighborhood_garage = train.groupby("Neighborhood")["GarageArea"].mean()
+        train["Neighborhood_AvgGarageArea"] = train["Neighborhood"].map(neighborhood_garage)
+        test["Neighborhood_AvgGarageArea"] = test["Neighborhood"].map(neighborhood_garage).fillna(
+            train["GarageArea"].mean()
+        )
+        # Create interaction
+        train["GarageArea_vs_Neighborhood"] = train["GarageArea"] / (train["Neighborhood_AvgGarageArea"] + 1)
+        test["GarageArea_vs_Neighborhood"] = test["GarageArea"] / (test["Neighborhood_AvgGarageArea"] + 1)
+        created_features.append("Neighborhood_AvgGarageArea")
+        created_features.append("GarageArea_vs_Neighborhood")
+    
+    return train, test, created_features
+
+
+def add_domain_specific_features(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    """
+    Add domain-specific features based on real estate valuation principles.
+    These features capture luxury indicators, efficiency metrics, and property characteristics.
+    """
+    created_features = []
+    
+    # Luxury Indicators: Combinations of premium features
+    luxury_flags = []
+    if "HasPool" in df.columns:
+        luxury_flags.append("HasPool")
+    if "HasFireplace" in df.columns:
+        luxury_flags.append("HasFireplace")
+    if "HasGarage" in df.columns:
+        luxury_flags.append("HasGarage")
+    if "Has2ndFlr" in df.columns:
+        luxury_flags.append("Has2ndFlr")
+    
+    if len(luxury_flags) > 0:
+        df["LuxuryFeatureCount"] = df[luxury_flags].sum(axis=1)
+        created_features.append("LuxuryFeatureCount")
+        # Premium combination: Pool + Fireplace + Garage + 2nd Floor
+        if all(flag in df.columns for flag in ["HasPool", "HasFireplace", "HasGarage", "Has2ndFlr"]):
+            df["PremiumLuxury"] = (
+                df["HasPool"] * df["HasFireplace"] * df["HasGarage"] * df["Has2ndFlr"]
+            ).astype(int)
+            created_features.append("PremiumLuxury")
+    
+    # Efficiency Metrics: Living area per bedroom, lot utilization
+    if "GrLivArea" in df.columns and "BedroomAbvGr" in df.columns:
+        df["LivingArea_per_Bedroom"] = df["GrLivArea"] / (df["BedroomAbvGr"] + 1)
+        created_features.append("LivingArea_per_Bedroom")
+    
+    if "TotalSF" in df.columns and "LotArea" in df.columns:
+        df["LotUtilization"] = df["TotalSF"] / (df["LotArea"] + 1)
+        created_features.append("LotUtilization")
+    
+    # Condition Scores: Weighted average of all condition/quality ratings
+    quality_cols = [col for col in df.columns if "_Score" in col or col in ["OverallQual", "OverallCond"]]
+    if len(quality_cols) > 0:
+        # Weighted average (OverallQual and OverallCond get higher weight)
+        weights = {}
+        for col in quality_cols:
+            if col == "OverallQual":
+                weights[col] = 2.0
+            elif col == "OverallCond":
+                weights[col] = 1.5
+            else:
+                weights[col] = 1.0
+        
+        weighted_sum = sum(df[col] * weights.get(col, 1.0) for col in quality_cols if col in df.columns)
+        weight_sum = sum(weights.get(col, 1.0) for col in quality_cols if col in df.columns)
+        df["WeightedQualityScore"] = weighted_sum / (weight_sum + 1e-10)
+        created_features.append("WeightedQualityScore")
+    
+    # Renovation Indicators: Remodeled + Quality improvements
+    if "Is_Remodeled" in df.columns and "OverallQual" in df.columns and "YearRemodAdd" in df.columns and "YearBuilt" in df.columns:
+        # Quality improvement: Did quality increase after remodel?
+        # This is a proxy - we can't directly measure, but newer remodels might have higher quality
+        df["RecentRemodel"] = (df["Is_Remodeled"] == 1) & (df["YearRemodAdd"] >= 2000).astype(int)
+        created_features.append("RecentRemodel")
+    
+    # Architectural Style: MSSubClass interactions with other features
+    if "MSSubClass" in df.columns:
+        if "TotalSF" in df.columns:
+            df["MSSubClass_x_TotalSF"] = df["MSSubClass"] * df["TotalSF"]
+            created_features.append("MSSubClass_x_TotalSF")
+        if "OverallQual" in df.columns:
+            df["MSSubClass_x_Quality"] = df["MSSubClass"] * df["OverallQual"]
+            created_features.append("MSSubClass_x_Quality")
+    
+    # Zoning Effects: MSZoning × Neighborhood interactions
+    # Note: If MSZoning is still categorical, this will be handled after encoding
+    # For now, we'll create numeric interactions if MSZoning has been encoded
+    if "MSZoning_TargetEnc" in df.columns and "Neighborhood_QualityScore" in df.columns:
+        df["MSZoning_x_Neighborhood"] = df["MSZoning_TargetEnc"] * df["Neighborhood_QualityScore"]
+        created_features.append("MSZoning_x_Neighborhood")
     
     return df, created_features
 
@@ -519,6 +723,15 @@ def main() -> None:
     print("  - Advanced interactions...")
     train, interaction_features = add_interaction_features_advanced(train)
     test, _ = add_interaction_features_advanced(test)
+    
+    # Neighborhood-level features (non-target-encoded)
+    print("  - Neighborhood-level features...")
+    train, test, neighborhood_features = add_neighborhood_features(train, test)
+    
+    # Domain-specific features
+    print("  - Domain-specific features...")
+    train, domain_features = add_domain_specific_features(train)
+    test, _ = add_domain_specific_features(test)
 
     # Log engineering details
     update_engineering_summary("Feature Engineering", {
@@ -533,7 +746,9 @@ def main() -> None:
         "temporal_features": len(temporal_features),
         "quality_aggregates": len(quality_features),
         "advanced_clustering": len(cluster_features),
-        "advanced_interactions": len(interaction_features)
+        "advanced_interactions": len(interaction_features),
+        "neighborhood_features": len(neighborhood_features),
+        "domain_specific_features": len(domain_features)
     })
 
     print("Saving Processed 4 data...")

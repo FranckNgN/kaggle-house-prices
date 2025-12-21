@@ -1,11 +1,13 @@
 """
 Cross-validation strategy utilities.
 
-Implements stratified CV based on target quantiles to better reflect
-Kaggle test distribution and prevent overfitting.
+Implements multiple CV strategies:
+- Stratified CV based on target quantiles
+- GroupKFold by neighborhood (prevents data leakage from neighborhood effects)
+- Standard KFold
 """
 import numpy as np
-from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.model_selection import StratifiedKFold, KFold, GroupKFold
 from typing import Tuple, List, Optional
 
 
@@ -60,9 +62,32 @@ def create_stratified_cv_splits(
     return splits
 
 
+def create_groupkfold_splits(
+    groups: np.ndarray,
+    n_splits: int = 5
+) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """
+    Create GroupKFold splits based on group labels (e.g., Neighborhood).
+    
+    This ensures that all samples from the same group (neighborhood) are
+    in the same fold, preventing data leakage from group-level effects.
+    
+    Args:
+        groups: Group labels for each sample (e.g., neighborhood names/IDs)
+        n_splits: Number of CV folds
+        
+    Returns:
+        List of (train_indices, val_indices) tuples
+    """
+    gkf = GroupKFold(n_splits=n_splits)
+    splits = list(gkf.split(np.arange(len(groups)), groups=groups))
+    return splits
+
+
 def get_cv_strategy(
     strategy: str = "stratified",
     y: Optional[np.ndarray] = None,
+    groups: Optional[np.ndarray] = None,
     n_splits: int = 5,
     shuffle: bool = True,
     random_state: int = 42,
@@ -72,8 +97,10 @@ def get_cv_strategy(
     Get a CV splitter based on the specified strategy.
     
     Args:
-        strategy: "stratified" (target quantiles) or "kfold" (standard KFold)
+        strategy: "stratified" (target quantiles), "group" (GroupKFold), 
+                 "kfold" (standard KFold), or "repeated_stratified" (repeated stratified)
         y: Target values (required for stratified)
+        groups: Group labels for GroupKFold (e.g., neighborhood IDs)
         n_splits: Number of CV folds
         shuffle: Whether to shuffle (for KFold)
         random_state: Random state
@@ -91,6 +118,28 @@ def get_cv_strategy(
             random_state=random_state,
             n_bins=n_bins
         )
+    elif strategy == "group":
+        if groups is None:
+            raise ValueError("groups is required for GroupKFold")
+        return create_groupkfold_splits(
+            groups=groups,
+            n_splits=n_splits
+        )
+    elif strategy == "repeated_stratified":
+        if y is None:
+            raise ValueError("y is required for repeated stratified CV")
+        # Create multiple stratified splits with different random states
+        all_splits = []
+        n_repeats = 3  # 3 repeats
+        for repeat in range(n_repeats):
+            splits = create_stratified_cv_splits(
+                y=y,
+                n_splits=n_splits,
+                random_state=random_state + repeat,
+                n_bins=n_bins
+            )
+            all_splits.extend(splits)
+        return all_splits
     elif strategy == "kfold":
         kf = KFold(
             n_splits=n_splits,
@@ -99,5 +148,8 @@ def get_cv_strategy(
         )
         return kf
     else:
-        raise ValueError(f"Unknown CV strategy: {strategy}. Use 'stratified' or 'kfold'")
+        raise ValueError(
+            f"Unknown CV strategy: {strategy}. "
+            f"Use 'stratified', 'group', 'repeated_stratified', or 'kfold'"
+        )
 

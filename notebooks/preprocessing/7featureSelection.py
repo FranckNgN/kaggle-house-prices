@@ -342,6 +342,77 @@ def find_optimal_feature_count(
     return best_count, best_score
 
 
+def remove_redundant_features(
+    X: pd.DataFrame,
+    importance_scores: pd.Series,
+    correlation_threshold: float = 0.95
+) -> List[str]:
+    """
+    Remove redundant features based on feature-to-feature correlation.
+    When two features are highly correlated, keep the one with higher importance.
+    
+    Args:
+        X: Feature dataframe
+        importance_scores: Feature importance scores
+        correlation_threshold: Correlation threshold above which features are considered redundant
+    
+    Returns:
+        List of selected feature names (redundant ones removed)
+    """
+    print(f"\n  Removing redundant features (correlation > {correlation_threshold})...")
+    
+    # Only consider numeric features
+    numeric_cols = [col for col in X.columns if pd.api.types.is_numeric_dtype(X[col])]
+    X_numeric = X[numeric_cols]
+    
+    if len(numeric_cols) == 0:
+        return []
+    
+    # Compute correlation matrix
+    corr_matrix = X_numeric.corr().abs()
+    
+    # Find highly correlated pairs
+    redundant_pairs = []
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i + 1, len(corr_matrix.columns)):
+            if corr_matrix.iloc[i, j] > correlation_threshold:
+                redundant_pairs.append((
+                    corr_matrix.columns[i],
+                    corr_matrix.columns[j],
+                    corr_matrix.iloc[i, j]
+                ))
+    
+    if len(redundant_pairs) == 0:
+        print(f"    No redundant features found (all correlations <= {correlation_threshold})")
+        return numeric_cols
+    
+    print(f"    Found {len(redundant_pairs)} highly correlated feature pairs")
+    
+    # Determine which features to remove
+    # Strategy: For each pair, remove the one with lower importance
+    features_to_remove = set()
+    
+    for feat1, feat2, corr_val in redundant_pairs:
+        # Get importance scores (use 0 if not in importance_scores)
+        imp1 = importance_scores.get(feat1, 0.0)
+        imp2 = importance_scores.get(feat2, 0.0)
+        
+        if imp1 < imp2:
+            features_to_remove.add(feat1)
+            print(f"      Removing {feat1} (corr={corr_val:.3f} with {feat2}, lower importance)")
+        else:
+            features_to_remove.add(feat2)
+            print(f"      Removing {feat2} (corr={corr_val:.3f} with {feat1}, lower importance)")
+    
+    # Return features that are not redundant
+    selected_features = [f for f in numeric_cols if f not in features_to_remove]
+    
+    print(f"    Removed {len(features_to_remove)} redundant features")
+    print(f"    Remaining: {len(selected_features)} features")
+    
+    return selected_features
+
+
 def main(
     input_train_path: Optional[Path] = None,
     input_test_path: Optional[Path] = None,
@@ -483,6 +554,21 @@ def main(
     importance_output = local_config.PROCESSED_DIR / "feature_importance.csv"
     importance_df.to_csv(importance_output)
     print(f"  Saved importance scores to: {importance_output}")
+    
+    # Remove redundant features (correlation > 0.95)
+    # This should be done before final feature selection
+    print(f"\nRemoving redundant features...")
+    non_redundant_features = remove_redundant_features(
+        X_train, 
+        combined_importance, 
+        correlation_threshold=0.95
+    )
+    
+    # Update combined_importance to only include non-redundant features
+    # (set redundant features to 0 so they won't be selected)
+    for col in X_train.columns:
+        if col not in non_redundant_features and col in combined_importance.index:
+            combined_importance[col] = 0.0
     
     # Select features
     print(f"\nSelecting features (method: {method})...")

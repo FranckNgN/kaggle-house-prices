@@ -167,7 +167,7 @@ XGBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 20,  # Optimized for ~1 hour runtime (15-20 trials with 5-fold CV)
+        "n_trials": 50,  # Increased for better optimization (50 trials with 5-fold CV)
         "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
@@ -180,6 +180,7 @@ XGBOOST = {
         "colsample_bytree": (0.6, 1.0),
         "min_child_weight": (1, 10),
         "gamma": (0, 5),
+        "objective": ["reg:squarederror", "reg:absoluteerror"],  # Alternative loss functions
     },
 }
 
@@ -217,7 +218,7 @@ LIGHTGBM = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 20,  # Optimized for ~1 hour runtime (15-20 trials with 5-fold CV)
+        "n_trials": 50,  # Increased for better optimization (50 trials with 5-fold CV)
         "n_splits": 5,  # Full 5-fold CV for better validation
         "random_state": 42,
     },
@@ -232,6 +233,7 @@ LIGHTGBM = {
         "min_child_samples": (5, 50),
         "reg_alpha": (0, 10),
         "reg_lambda": (0, 10),
+        "objective": ["regression", "mae", "huber"],  # Alternative loss functions
     },
 }
 
@@ -271,6 +273,7 @@ CATBOOST = {
         "l2_leaf_reg": (1, 10),  # Wider regularization range
         "bagging_temperature": (0, 2),  # Wider range
         "random_strength": (0, 2),  # Wider range
+        "loss_function": ["RMSE", "MAE", "Quantile:alpha=0.9"],  # Alternative loss functions
     },
     # Cross-validation settings
     "cv": {
