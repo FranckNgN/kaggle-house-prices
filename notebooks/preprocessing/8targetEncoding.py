@@ -235,7 +235,8 @@ def main() -> None:
             print("  Adding Neighborhood Price per Square Foot (cross-validated)...")
             # Create price per SF in log space (logSP / TotalSF)
             train["PricePerSF_log"] = train["logSP"] / (train["TotalSF"] + 1)
-            test["PricePerSF_log"] = test["logSP"] / (test["TotalSF"] + 1)  # Will be replaced with target encoding
+            # Test set doesn't have logSP, so set to NaN (will be replaced with target encoding)
+            test["PricePerSF_log"] = np.nan
             
             # Target encode PricePerSF by Neighborhood
             train_encoded, test_encoded = target_encode_cv(
