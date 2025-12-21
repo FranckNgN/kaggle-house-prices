@@ -254,6 +254,48 @@ python scripts/submit_to_kaggle.py data/submissions/model.csv
 - **[Technical Log](docs/TECHNICAL_LOG.md)** - Detailed technical documentation, errors, implementation details
 - **[Venv Usage](docs/VENV_USAGE.md)** - Virtual environment setup guide
 - **[Scripts Guide](scripts/README.md)** - Script usage and automation
+- **[Hybrid Workflow Guide](docs/HYBRID_WORKFLOW.md)** - Guide for local development with Kaggle GPU execution
+
+---
+
+## 🚀 Hybrid Local-Kaggle GPU Workflow
+
+Develop locally, train on Kaggle GPU! This project supports a hybrid workflow that enables:
+
+- **Local Development**: Fast iteration on CPU for preprocessing and quick tests
+- **Kaggle GPU Training**: Leverage Kaggle's free GPU (30 hours/week) for intensive model training
+- **Seamless Sync**: Git-based code synchronization between local and Kaggle environments
+
+### Quick Start
+
+1. **Local Development**:
+   ```bash
+   # Edit code, test locally
+   python notebooks/Models/9catBoostModel.py
+   
+   # Commit and push
+   git add .
+   git commit -m "Your changes"
+   git push
+   ```
+
+2. **Kaggle GPU Execution**:
+   - Open Kaggle Notebook, enable GPU accelerator
+   - Use template: `kaggle/notebooks/kaggle_gpu_runner.ipynb`
+   - Clone repository and run models (GPU automatically detected and used)
+
+3. **Check Status**:
+   ```bash
+   python scripts/sync_to_kaggle.py  # Check git status and get guidance
+   ```
+
+**Key Features**:
+- ✅ Automatic environment detection (local vs Kaggle)
+- ✅ Automatic GPU detection and configuration
+- ✅ Path mapping for seamless code execution
+- ✅ Same codebase works in both environments
+
+For detailed workflow guide, see **[Hybrid Workflow Documentation](docs/HYBRID_WORKFLOW.md)**.
 
 ---
 

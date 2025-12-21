@@ -1,8 +1,50 @@
-﻿from pathlib import Path
+from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data"
-RAW_DIR = DATA_DIR / "raw"
+# Import environment detection for hybrid local/Kaggle workflow
+try:
+    from config_local.environment import (
+        is_kaggle_environment,
+        get_base_path,
+        get_data_path,
+        get_working_data_path,
+        get_kaggle_input_path,
+        setup_kaggle_symlinks
+    )
+except ImportError:
+    # Fallback if environment.py doesn't exist yet
+    def is_kaggle_environment():
+        return False
+    def get_base_path():
+        return Path(__file__).resolve().parents[1]
+    def get_data_path():
+        return get_base_path() / "data"
+    def get_working_data_path():
+        return get_base_path() / "data"
+    def get_kaggle_input_path(file_path):
+        return get_base_path() / file_path
+    def setup_kaggle_symlinks(base_path=None):
+        pass
+
+# Base paths - environment aware
+ROOT = get_base_path()
+
+# Data directories - use working data path for outputs, data path for inputs
+if is_kaggle_environment():
+    # On Kaggle: inputs from /kaggle/input, outputs to /kaggle/working/data
+    DATA_DIR = get_working_data_path()
+    RAW_DIR = get_data_path()  # Competition data from /kaggle/input
+    # Setup symlinks for compatibility (allows code to use local paths)
+    setup_kaggle_symlinks(ROOT)
+    # After symlink setup, use working directory for raw data access
+    # (will resolve via symlinks to /kaggle/input)
+    working_raw = DATA_DIR / "raw"
+    if working_raw.exists() or not RAW_DIR.exists():
+        RAW_DIR = working_raw
+else:
+    # Local environment: standard paths
+    DATA_DIR = ROOT / "data"
+    RAW_DIR = DATA_DIR / "raw"
+
 INTERIM_DIR = DATA_DIR / "interim"
 INTERIM_TRAIN_DIR = INTERIM_DIR / "train"
 INTERIM_TEST_DIR = INTERIM_DIR / "test"
@@ -10,11 +52,12 @@ OOF_DIR = INTERIM_DIR / "oof"
 PROCESSED_DIR = DATA_DIR / "processed"
 SUBMISSIONS_DIR = DATA_DIR / "submissions"
 
-# Runs and outputs
+# Runs and outputs - always use working directory
 RUNS_DIR = ROOT / "runs"
 KAGGLE_DIR = ROOT / ".kaggle"
 
-# Raw
+# Raw data files - use environment-aware paths
+# On Kaggle, these may be symlinked to /kaggle/input
 TRAIN_CSV = RAW_DIR / "train.csv"
 TEST_CSV = RAW_DIR / "test.csv"
 DATA_DESCRIPTION = RAW_DIR / "data_description.txt"

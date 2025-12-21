@@ -1312,6 +1312,236 @@ Successfully tested the fixed blending model with existing predictions:
 - `utils/checks.py` - Comprehensive sanity checks
 - `utils/model_validation.py` - Model-specific validation
 
+### 5.5 Hybrid Local-Kaggle GPU Workflow
+
+**Architecture Overview** (Implemented: 2025-12-21)
+
+The project supports a hybrid development workflow that enables local development while leveraging Kaggle's GPU infrastructure for intensive model training. This architecture allows developers to work efficiently locally (CPU for fast iteration) while using Kaggle's free GPU quota (30 hours/week) for GPU-accelerated training.
+
+#### Architecture Diagram
+
+```
+┌─────────────────────┐         ┌──────────────────┐         ┌─────────────────────┐
+│  Local Machine      │         │  Git Repository  │         │  Kaggle Notebook    │
+│  (Development)      │         │  (Sync Point)    │         │  (GPU Execution)    │
+├─────────────────────┤         ├──────────────────┤         ├─────────────────────┤
+│                     │         │                  │         │                     │
+│  • Edit Code        │────────>│  Commit & Push   │         │                     │
+│  • Test on CPU      │         │                  │<────────│  Clone Repo         │
+│  • Fast Iteration   │         │                  │         │                     │
+│                     │         │                  │         │  • Setup Environment│
+│                     │         │                  │         │  • Verify GPU       │
+│                     │         │                  │         │  • Run Models       │
+│  Download Results   │<────────│                  │────────>│  • Save Outputs     │
+│                     │         │                  │         │                     │
+└─────────────────────┘         └──────────────────┘         └─────────────────────┘
+```
+
+#### Environment Detection
+
+The system automatically detects whether code is running locally or on Kaggle through the `config_local/environment.py` module:
+
+**Detection Mechanism**:
+```python
+def is_kaggle_environment() -> bool:
+    """Check for /kaggle/working directory (unique to Kaggle)."""
+    return Path("/kaggle/working").exists()
+```
+
+**Key Functions**:
+- `is_kaggle_environment()` - Detects Kaggle environment
+- `get_base_path()` - Returns `/kaggle/working/project` on Kaggle, local project root otherwise
+- `get_data_path()` - Returns `/kaggle/input/competition-name/` on Kaggle, local `data/` otherwise
+- `get_working_data_path()` - Returns `/kaggle/working/data/` on Kaggle, local `data/` otherwise
+- `detect_gpu()` - Detects GPU availability via multiple methods (nvidia-smi, CUDA, PyTorch, TensorFlow)
+- `setup_kaggle_symlinks()` - Creates symlinks from project data/raw/ to Kaggle input for compatibility
+
+#### Path Mapping
+
+The configuration system automatically maps paths based on environment:
+
+| Purpose | Local Path | Kaggle Path |
+|---------|-----------|-------------|
+| **Input Data** | `data/raw/train.csv` | `/kaggle/input/house-prices-advanced-regression-techniques/train.csv` |
+| **Intermediate Data** | `data/interim/train/train_process8.csv` | `/kaggle/working/project/data/interim/train/train_process8.csv` |
+| **Submissions** | `data/submissions/` | `/kaggle/working/project/data/submissions/` |
+| **Model Logs** | `runs/model_performance.csv` | `/kaggle/working/project/runs/model_performance.csv` |
+
+**Implementation**: `config_local/local_config.py` uses environment detection to conditionally set paths, maintaining backward compatibility with existing code.
+
+#### GPU Detection & Utilization
+
+Models automatically detect and utilize GPU when available, falling back to CPU if not:
+
+**Detection Methods** (in order of priority):
+1. `nvidia-smi` command (most reliable)
+2. `CUDA_VISIBLE_DEVICES` environment variable
+3. PyTorch CUDA availability check
+4. TensorFlow GPU availability check
+
+**Model-Specific GPU Configuration**:
+
+| Model | GPU Parameter | CPU Fallback |
+|-------|--------------|--------------|
+| **XGBoost** | `tree_method='gpu_hist'` | `tree_method='hist'` |
+| **CatBoost** | `task_type='GPU'` | `task_type='CPU'` |
+| **LightGBM** | `device='gpu'` | `device='cpu'` |
+
+**Implementation**: Model scripts (`7XGBoostModel.py`, `9catBoostModel.py`, `8lightGbmModel.py`) use `kaggle.remote.gpu_runner.get_gpu_params_for_model()` to automatically configure GPU parameters before training.
+
+#### Workflow Steps
+
+**1. Local Development**:
+- Edit code locally in IDE/editor
+- Test preprocessing and quick model tests on CPU (fast iteration)
+- Commit changes to Git
+- Push to remote repository (GitHub/GitLab)
+
+**2. Kaggle GPU Execution**:
+- Open/create Kaggle Notebook
+- Enable GPU accelerator (P100 or T4) in notebook settings
+- Add competition dataset ("house-prices-advanced-regression-techniques")
+- Run template notebook (`kaggle/notebooks/kaggle_gpu_runner.ipynb`):
+  - Cell 1: Clone repository from Git
+  - Cell 2: Setup Kaggle environment (symlinks, verification)
+  - Cell 3: Verify GPU availability
+  - Cell 4: Run preprocessing (optional, if needed)
+  - Cell 5: Run GPU-intensive model training
+  - Cell 6: Verify outputs
+
+**3. Result Retrieval**:
+- Download submission files from Kaggle notebook outputs
+- Or use Kaggle API to download outputs
+- Save to local `data/submissions/` directory
+- Submit using existing submission scripts (`scripts/submit_model.py`)
+
+#### Synchronization Mechanism
+
+**Git-Based Sync**:
+- Code synchronization via Git repository
+- All changes tracked in version control
+- Simple `git push` to sync to Kaggle
+- `scripts/sync_to_kaggle.py` helper script checks git status and provides guidance
+
+**File Structure**:
+```
+project/
+├── config_local/
+│   ├── environment.py          # Environment detection
+│   └── local_config.py         # Environment-aware paths
+├── kaggle/
+│   ├── notebooks/
+│   │   └── kaggle_gpu_runner.ipynb  # Template notebook
+│   └── remote/
+│       ├── setup_kaggle.py     # Kaggle environment setup
+│       └── gpu_runner.py       # GPU detection utilities
+└── scripts/
+    └── sync_to_kaggle.py       # Git sync helper
+```
+
+#### Benefits
+
+1. **Fast Local Iteration**: Develop and test on CPU quickly without GPU dependency
+2. **GPU Power When Needed**: Use Kaggle GPUs for intensive training (Optuna optimization, large models)
+3. **No Complex Setup**: Leverage existing Git workflow, no file syncing complexity
+4. **Version Control**: All code changes tracked in Git
+5. **Cost Effective**: Use free Kaggle GPU quota (30 hours/week)
+6. **Reproducible**: Kaggle notebook captures exact environment
+7. **Seamless Integration**: Same codebase works in both environments without modification
+
+#### Technical Implementation Details
+
+**Environment Detection Flow**:
+1. On import, `config_local/local_config.py` checks `is_kaggle_environment()`
+2. If Kaggle: Sets paths to `/kaggle/input/` (data) and `/kaggle/working/` (outputs)
+3. If Local: Uses standard project paths (`data/`, `runs/`)
+4. `setup_kaggle_symlinks()` creates symlinks for compatibility (optional, allows code to use local paths)
+
+**GPU Detection Flow**:
+1. Model scripts call `get_gpu_params_for_model(model_type)`
+2. Function checks GPU availability via `detect_gpu()`
+3. Returns appropriate parameters (GPU or CPU) for the model type
+4. Parameters merged into model configuration before training
+5. Model logs which device is being used
+
+**Path Resolution Example**:
+```python
+# Same code works in both environments
+from config_local import local_config
+
+# Automatically resolves to:
+# - Local: data/raw/train.csv
+# - Kaggle: /kaggle/input/house-prices-advanced-regression-techniques/train.csv
+train_data = pd.read_csv(local_config.TRAIN_CSV)
+```
+
+#### Key Files & Roles
+
+- **`config_local/environment.py`**: Core environment detection and path resolution
+- **`config_local/local_config.py`**: Environment-aware configuration (updated to use environment detection)
+- **`kaggle/notebooks/kaggle_gpu_runner.ipynb`**: Template notebook for Kaggle execution
+- **`kaggle/remote/setup_kaggle.py`**: Sets up Kaggle environment (symlinks, verification)
+- **`kaggle/remote/gpu_runner.py`**: GPU detection and parameter configuration utilities
+- **`scripts/sync_to_kaggle.py`**: Helper script for Git workflow preparation
+- **`docs/HYBRID_WORKFLOW.md`**: Detailed step-by-step workflow guide
+
+#### Usage Example
+
+**Local Development**:
+```bash
+# Edit code locally
+vim notebooks/Models/9catBoostModel.py
+
+# Test on CPU (fast)
+python notebooks/Models/9catBoostModel.py
+
+# Commit and push
+git add .
+git commit -m "Model improvements"
+git push
+```
+
+**Kaggle GPU Training**:
+```python
+# In Kaggle Notebook
+# Cell 1: Clone repo
+!git clone https://github.com/username/house-prices-starter.git /kaggle/working/project
+%cd /kaggle/working/project
+
+# Cell 2: Setup environment
+from kaggle.remote.setup_kaggle import setup_kaggle_environment
+setup_kaggle_environment()
+
+# Cell 3: Verify GPU
+from kaggle.remote.gpu_runner import verify_gpu_setup
+verify_gpu_setup()  # Should detect GPU
+
+# Cell 5: Run model (GPU automatically used)
+%run notebooks/Models/9catBoostModel.py
+```
+
+#### Data Flow
+
+**Input Data Flow**:
+- Competition data mounted at `/kaggle/input/competition-name/` on Kaggle
+- Symlinks created from `data/raw/` to `/kaggle/input/` for code compatibility
+- Or code reads directly from `/kaggle/input/` via environment-aware paths
+
+**Output Data Flow**:
+- All outputs saved to `/kaggle/working/project/` on Kaggle (persists between sessions)
+- Local paths automatically mapped to `/kaggle/working/` equivalents
+- Results can be downloaded from Kaggle notebook or committed back to Git
+
+#### Troubleshooting
+
+**Common Issues**:
+- **GPU not detected**: Check notebook accelerator settings, verify with `!nvidia-smi`
+- **Path errors**: Ensure `setup_kaggle_environment()` is run, verify competition dataset is added
+- **Import errors**: Verify dependencies installed (`pip install -r requirements.txt`), check Python path
+- **Git clone fails**: Verify repository URL, ensure repo is public or credentials configured
+
+**Documentation**: See `docs/HYBRID_WORKFLOW.md` for detailed troubleshooting guide.
+
 ---
 
 ## 6. Model Comparison & Analysis

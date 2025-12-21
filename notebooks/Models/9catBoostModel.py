@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 from catboost import CatBoostRegressor
 from config_local import local_config
 from config_local import model_config
+from kaggle.remote.gpu_runner import get_gpu_params_for_model
 from utils.optimization import run_optuna_study
 from utils.data import load_sample_submission
 from utils.metrics import log_model_result
@@ -28,6 +29,9 @@ if __name__ == "__main__":
     cfg = model_config.CATBOOST
     opt_cfg = cfg["optuna_settings"]
     
+    # Detect GPU and adjust parameters
+    gpu_params = get_gpu_params_for_model("catboost")
+    
     # Start timing
     start_time = time.time()
     
@@ -39,18 +43,27 @@ if __name__ == "__main__":
     print(f"Features: {X.shape[1]}")
     print(f"Optuna trials: {opt_cfg['n_trials']}")
     print(f"CV folds: {opt_cfg['n_splits']}")
+    if gpu_params.get("task_type") == "GPU":
+        print(f"Device: GPU (accelerated)")
+    else:
+        print(f"Device: CPU")
     print("="*70)
+    
+    # Update base_params with GPU settings
+    base_params = cfg["base_params"].copy()
+    base_params.update(gpu_params)
     
     best_params, best_rmse = run_optuna_study(
         X.values, 
         y.values, 
         model_type="catboost",
-        base_params=cfg["base_params"],
+        base_params=base_params,
         optuna_space=cfg["optuna_space"],
         n_trials=opt_cfg["n_trials"],
         n_splits=opt_cfg["n_splits"],
         random_state=opt_cfg["random_state"],
-        show_progress=True
+        show_progress=True,
+        cv_strategy="stratified"
     )
     
     # Calculate runtime
@@ -76,7 +89,7 @@ if __name__ == "__main__":
     print(f"Best CV RMSE: {best_rmse:.6f}")
     print("="*70)
     
-    final_params = cfg["base_params"].copy()
+    final_params = base_params.copy()
     final_params.update(best_params)
     
     # Apply final training verbosity if set
@@ -90,7 +103,8 @@ if __name__ == "__main__":
     print(f"  Iterations: {final_params.get('iterations', 'auto')}")
     print(f"  Learning rate: {final_params.get('learning_rate', 'auto')}")
     print(f"  Depth: {final_params.get('depth', 'auto')}")
-    print(f"  Device: {final_params.get('task_type', 'CPU')}")
+    device_type = final_params.get('task_type', 'CPU')
+    print(f"  Device: {device_type} {'(GPU accelerated)' if device_type == 'GPU' else '(CPU)'}")
     
     final_start_time = time.time()
     best_model = CatBoostRegressor(**final_params)

@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 from lightgbm import LGBMRegressor
 from config_local import local_config
 from config_local import model_config
+from kaggle.remote.gpu_runner import get_gpu_params_for_model
 from utils.optimization import run_optuna_study
 from utils.data import load_sample_submission
 from utils.metrics import log_model_result
@@ -28,16 +29,31 @@ if __name__ == "__main__":
     cfg = model_config.LIGHTGBM
     opt_cfg = cfg["optuna_settings"]
     
+    # Detect GPU and adjust parameters
+    gpu_params = get_gpu_params_for_model("lightgbm")
+    print("\n" + "="*70)
+    print("LIGHTGBM MODEL TRAINING")
+    print("="*70)
+    if gpu_params.get("device") == "gpu":
+        print("[INFO] GPU detected - will use GPU acceleration")
+    else:
+        print("[INFO] GPU not available - will use CPU")
+    print("="*70)
+    
+    # Update base_params with GPU settings
+    base_params = cfg["base_params"].copy()
+    base_params.update(gpu_params)
+    
     # Start timing
     start_time = time.time()
     
     # Use Optuna for hyperparameter optimization
-    print("Running Optuna optimization for LightGBM...")
+    print("\nRunning Optuna optimization for LightGBM...")
     best_params, best_rmse = run_optuna_study(
         X.values, 
         y.values, 
         model_type="lightgbm",
-        base_params=cfg["base_params"],
+        base_params=base_params,
         optuna_space=cfg["optuna_space"],
         n_trials=opt_cfg["n_trials"],
         n_splits=opt_cfg["n_splits"],
@@ -58,9 +74,11 @@ if __name__ == "__main__":
     )
 
     # Train final model with best params
-    print("Training final model with best hyperparameters...")
-    final_params = cfg["base_params"].copy()
+    print("\nTraining final model with best hyperparameters...")
+    final_params = base_params.copy()
     final_params.update(best_params)
+    device = final_params.get("device", "cpu")
+    print(f"  Device: {device.upper()} ({'GPU accelerated' if device == 'gpu' else 'CPU'})")
     
     best_model = LGBMRegressor(**final_params)
     best_model.fit(X.values, y.values)
