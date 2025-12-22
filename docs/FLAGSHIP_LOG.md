@@ -1917,8 +1917,7 @@ python -m kaggle.scores sync               # Sync scores to CSV
 
 **Files Created Today:**
 - `utils/cv_strategy.py` - Stratified CV implementation
-- Error analysis functionality (now in `scripts/analyze.py`)
-- `docs/ENSEMBLE_AND_CV_FIXES.md` - Detailed documentation
+- Error analysis functionality (now integrated into `scripts/analyze.py`)
 
 **Next Actions:**
 1. Re-run preprocessing (stages 4-8) with new features
