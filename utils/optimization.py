@@ -65,7 +65,8 @@ def run_optuna_study(
     n_splits: int = 5,
     random_state: int = 42,
     show_progress: bool = True,
-    cv_strategy: str = "stratified"
+    cv_strategy: str = "stratified",
+    timeout: float = None
 ) -> Dict[str, Any]:
     """
     Run an Optuna study to find best hyperparameters.
@@ -79,6 +80,9 @@ def run_optuna_study(
         n_trials: Number of trials
         n_splits: Number of CV folds
         random_state: Random state for reproducibility
+        show_progress: Whether to show progress updates
+        cv_strategy: CV strategy to use ('stratified' or 'kfold')
+        timeout: Optional timeout in seconds. If set, optimization will stop after this time.
         
     Returns:
         Best hyperparameters found
@@ -155,9 +159,19 @@ def run_optuna_study(
     print(f"  CV Folds: {n_splits}")
     print(f"  CV Strategy: {cv_strategy}")
     print(f"  Total model fits: {n_trials * n_splits}")
+    if timeout:
+        print(f"  Timeout: {timeout/60:.1f} minutes ({timeout} seconds)")
     print(f"{'='*70}")
     
-    study.optimize(objective, n_trials=n_trials, callbacks=callbacks, show_progress_bar=False)
+    optimize_kwargs = {
+        "n_trials": n_trials,
+        "callbacks": callbacks,
+        "show_progress_bar": False
+    }
+    if timeout:
+        optimize_kwargs["timeout"] = timeout
+    
+    study.optimize(objective, **optimize_kwargs)
     
     total_time = time.time() - (callbacks[0].start_time if callbacks else time.time())
     

@@ -140,24 +140,83 @@ def _get_kaggle_api():
     if KaggleApi is None:
         try:
             # Import from installed kaggle-api package
-            import importlib
             import sys
+            import importlib.util
+            from pathlib import Path
             
-            # Save current kaggle module state
+            # Save current kaggle module state and remove ALL kaggle modules
             saved_modules = {}
             for key in list(sys.modules.keys()):
-                if key.startswith('kaggle') and key != 'kaggle':
+                if key.startswith('kaggle'):
                     saved_modules[key] = sys.modules.pop(key)
             
-            # Import from installed package
-            kaggle_api_module = importlib.import_module('kaggle.api.kaggle_api_extended')
-            KaggleApi = kaggle_api_module.KaggleApi
+            # Temporarily remove our local kaggle package from sys.path
+            project_root = Path(__file__).resolve().parent.parent
+            local_kaggle_path = str(project_root)
+            path_removed = False
+            if local_kaggle_path in sys.path:
+                sys.path.remove(local_kaggle_path)
+                path_removed = True
             
-            # Restore modules
-            sys.modules.update(saved_modules)
-        except (ImportError, ModuleNotFoundError):
+            try:
+                # Try to find the installed kaggle package in site-packages
+                import site
+                import os
+                
+                # Look for kaggle package in site-packages
+                kaggle_package_path = None
+                for site_packages_dir in site.getsitepackages():
+                    kaggle_dir = Path(site_packages_dir) / "kaggle"
+                    if kaggle_dir.exists() and (kaggle_dir / "api" / "kaggle_api_extended.py").exists():
+                        kaggle_package_path = kaggle_dir
+                        break
+                
+                if kaggle_package_path is None:
+                    # Fallback: try to find via importlib
+                    spec = importlib.util.find_spec('kaggle.api.kaggle_api_extended')
+                    if spec is None or spec.origin is None:
+                        raise ImportError("kaggle.api.kaggle_api_extended not found in installed packages")
+                    
+                    # Load directly from the file path
+                    kaggle_api_path = Path(spec.origin)
+                    if not kaggle_api_path.exists():
+                        raise ImportError(f"kaggle.api.kaggle_api_extended file not found: {kaggle_api_path}")
+                    
+                    # Load the module from file
+                    loader = importlib.util.spec_from_file_location(
+                        "kaggle_api_extended",
+                        kaggle_api_path
+                    )
+                    if loader is None:
+                        raise ImportError("Failed to create loader for kaggle_api_extended")
+                    
+                    kaggle_api_module = importlib.util.module_from_spec(loader)
+                    loader.loader.exec_module(kaggle_api_module)
+                    KaggleApi = kaggle_api_module.KaggleApi
+                else:
+                    # Load from site-packages path
+                    kaggle_api_path = kaggle_package_path / "api" / "kaggle_api_extended.py"
+                    loader = importlib.util.spec_from_file_location(
+                        "kaggle_api_extended",
+                        kaggle_api_path
+                    )
+                    kaggle_api_module = importlib.util.module_from_spec(loader)
+                    loader.loader.exec_module(kaggle_api_module)
+                    KaggleApi = kaggle_api_module.KaggleApi
+            finally:
+                # Restore path if we removed it
+                if path_removed:
+                    sys.path.insert(0, local_kaggle_path)
+            
+            # Restore our local modules (but keep the installed kaggle.api modules)
+            for key, module in saved_modules.items():
+                # Don't restore if it's part of the installed package
+                if not (key.startswith('kaggle.api') or key == 'kaggle'):
+                    sys.modules[key] = module
+        except (ImportError, ModuleNotFoundError) as e:
             raise ImportError(
-                "kaggle-api package not installed. Install it with: pip install kaggle"
+                f"kaggle-api package not installed. Install it with: pip install kaggle\n"
+                f"Original error: {e}"
             )
     return KaggleApi
 

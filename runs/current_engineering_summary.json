@@ -49,7 +49,7 @@
     "advanced_interactions": 24
   },
   "Categorical Encoding": {
-    "one_hot_encoded": 32,
+    "one_hot_encoded": 40,
     "kept_for_target_encoding": 3,
     "low_cardinality_cols": [
       "MSZoning",
@@ -71,9 +71,9 @@
   },
   "Feature Selection": {
     "method": "auto",
-    "n_features_selected": 247,
-    "n_features_original": 274,
-    "reduction_percent": 9.85401459854015,
+    "n_features_selected": 198,
+    "n_features_original": 220,
+    "reduction_percent": 9.999999999999998,
     "importance_methods": [
       "xgboost",
       "lightgbm",
@@ -87,8 +87,6 @@
       "LotArea",
       "OverallQual",
       "OverallCond",
-      "YearBuilt",
-      "YearRemodAdd",
       "MasVnrArea",
       "BsmtFinSF1",
       "BsmtFinSF2",
@@ -99,9 +97,11 @@
       "LowQualFinSF",
       "GrLivArea",
       "BsmtFullBath",
+      "BsmtHalfBath",
       "FullBath",
       "HalfBath",
-      "BedroomAbvGr"
+      "BedroomAbvGr",
+      "KitchenAbvGr"
     ]
   },
   "Target Encoding": {

@@ -236,10 +236,28 @@ This work demonstrates:
 python notebooks/preprocessing/run_preprocessing.py
 
 # Train models
-python scripts/run_all_models_parallel.py
+python scripts/train.py                    # Train all models
+python scripts/train.py --models catboost xgboost  # Train specific models
+python scripts/train.py --preprocess       # Run preprocessing first
 
 # Submit to Kaggle
-python scripts/submit_to_kaggle.py data/submissions/model.csv
+python -m kaggle.submit catboost           # Submit specific model
+python -m kaggle.submit --interactive      # Interactive submission menu
+python -m kaggle.submit --all              # Submit all models
+
+# Check scores and leaderboard
+python -m kaggle.scores status             # Check submission status
+python -m kaggle.scores latest             # Get latest score
+python -m kaggle.scores sync               # Sync scores to performance CSV
+python -m kaggle.scores quantile           # Get leaderboard quantile
+python -m kaggle.scores log catboost 0.123456  # Manually log score
+
+# Analyze results
+python scripts/analyze.py performance      # Show model performance
+python scripts/analyze.py compare          # Compare model predictions
+python scripts/analyze.py errors catboost  # Analyze model errors
+python scripts/analyze.py best             # Analyze best models
+python scripts/analyze.py hyperparameters  # Analyze hyperparameters
 ```
 
 ### Best Model
@@ -249,18 +267,18 @@ python scripts/submit_to_kaggle.py data/submissions/model.csv
 
 ---
 
-## 📚 Additional Documentation
+## 📚 Documentation
 
-- **[Technical Log](docs/TECHNICAL_LOG.md)** - Detailed technical documentation, errors, implementation details
-- **[Venv Usage](docs/VENV_USAGE.md)** - Virtual environment setup guide
-- **[Scripts Guide](scripts/README.md)** - Script usage and automation
-- **[Hybrid Workflow Guide](docs/HYBRID_WORKFLOW.md)** - Guide for local development with Kaggle GPU execution
+- **[Project Status](docs/STATUS.md)** - Current status and progress
+- **[Kaggle Guide](docs/KAGGLE_GUIDE.md)** - Complete Kaggle workflow guide
+- **[Technical Details](docs/FLAGSHIP_LOG.md)** - Comprehensive technical documentation
+- **[Final Structure](FINAL_STRUCTURE.md)** - Streamlined project structure overview
 
 ---
 
-## 🚀 Hybrid Local-Kaggle GPU Workflow
+## 🚀 Kaggle Workflow
 
-Develop locally, train on Kaggle GPU! This project supports a hybrid workflow that enables:
+This project provides a streamlined workflow for Kaggle competitions:
 
 - **Local Development**: Fast iteration on CPU for preprocessing and quick tests
 - **Kaggle GPU Training**: Leverage Kaggle's free GPU (30 hours/week) for intensive model training
@@ -268,34 +286,24 @@ Develop locally, train on Kaggle GPU! This project supports a hybrid workflow th
 
 ### Quick Start
 
-1. **Local Development**:
+1. **Check Sync Status**:
    ```bash
-   # Edit code, test locally
-   python notebooks/Models/9catBoostModel.py
-   
-   # Commit and push
-   git add .
-   git commit -m "Your changes"
-   git push
+   python -m kaggle.sync  # Check git status and get guidance
    ```
 
-2. **Kaggle GPU Execution**:
-   - Open Kaggle Notebook, enable GPU accelerator
-   - Use template: `kaggle/notebooks/kaggle_gpu_runner.ipynb`
-   - Clone repository and run models (GPU automatically detected and used)
-
-3. **Check Status**:
+2. **Submit Models**:
    ```bash
-   python scripts/sync_to_kaggle.py  # Check git status and get guidance
+   python -m kaggle.submit catboost  # Submit specific model
+   python -m kaggle.submit --interactive  # Interactive menu
    ```
 
-**Key Features**:
-- ✅ Automatic environment detection (local vs Kaggle)
-- ✅ Automatic GPU detection and configuration
-- ✅ Path mapping for seamless code execution
-- ✅ Same codebase works in both environments
+3. **Check Scores**:
+   ```bash
+   python -m kaggle.scores status     # Submission status
+   python -m kaggle.scores latest     # Latest score
+   ```
 
-For detailed workflow guide, see **[Hybrid Workflow Documentation](docs/HYBRID_WORKFLOW.md)**.
+For detailed workflow guide, see **[Kaggle Guide](docs/KAGGLE_GUIDE.md)**.
 
 ---
 

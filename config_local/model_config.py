@@ -261,13 +261,13 @@ CATBOOST = {
     },
     # Optuna search settings
     "optuna_settings": {
-        "n_trials": 100,  # Increased for better optimization (100 trials with 5-fold CV)
-        "n_splits": 5,  # Full 5-fold CV for better validation
+        "n_trials": 25,  # Reduced from 100 to 25 for 30-minute run
+        "n_splits": 3,  # Reduced from 5 to 3 for faster CV
         "random_state": 42,
     },
     # Optuna search space (expanded for better optimization)
     "optuna_space": {
-        "iterations": (300, 2000),  # Wider range for better exploration
+        "iterations": (300, 1200),  # Reduced max from 2000 to 1200 for faster training
         "learning_rate": (0.01, 0.1, "log"),  # Wider range including lower rates
         "depth": (4, 10),  # Full depth range for better models
         "l2_leaf_reg": (1, 10),  # Wider regularization range

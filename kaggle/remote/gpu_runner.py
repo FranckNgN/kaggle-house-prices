@@ -36,7 +36,9 @@ def get_gpu_params_for_model(model_type: str) -> dict:
     # GPU is available, set GPU parameters
     print(f"[INFO] GPU available. {model_type} will use GPU.")
     if model_type == 'xgboost':
-        params['tree_method'] = 'gpu_hist'
+        # Use 'hist' with device='cuda' instead of 'gpu_hist' for compatibility
+        params['tree_method'] = 'hist'
+        params['device'] = 'cuda'
     elif model_type == 'catboost':
         params['task_type'] = 'GPU'
     elif model_type == 'lightgbm':
