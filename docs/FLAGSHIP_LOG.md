@@ -2,7 +2,7 @@
 
 **A Comprehensive Machine Learning Pipeline for Real Estate Price Prediction**
 
-*Project Journal & Showcase - Updated December 2025 (Latest: 2025-12-21)*
+*Project Journal & Showcase - Updated December 2025 (Latest: 2025-12-21, Streamlined: 2025-12-21)*
 
 ---
 
@@ -196,7 +196,7 @@ where $g$ is a meta-model (Lasso with α=0.0005) trained on out-of-fold predicti
 - `10blendingModel.py` - Blending Ensemble
 - `11stackingModel.py` - Stacking Ensemble
 
-**Main Model Training Script**: `scripts/run_all_models_parallel.py`
+**Main Model Training Script**: `scripts/train.py`
 - Runs all models sequentially (0-11)
 - Each model includes Optuna hyperparameter optimization
 - Automatic validation and sanity checks
@@ -1067,7 +1067,7 @@ From ModelComparison.ipynb analysis:
   - Reason: Ridge has CV-Kaggle gap >1.0 (severe overfitting)
 
 - **Created Error Analysis Script**:
-  - `scripts/analyze_model_errors.py`: Analyzes prediction errors
+  - `scripts/analyze.py errors <model_name>`: Analyzes prediction errors
   - Identifies worst predictions (top 5%)
   - Groups errors by Neighborhood, OverallQual, YearBuilt, etc.
   - Suggests targeted features based on error patterns
@@ -1080,7 +1080,7 @@ From ModelComparison.ipynb analysis:
 ### 4.9.4 Error-Driven Feature Engineering Tools ✅
 
 **Solution Implemented:**
-- **Created `scripts/analyze_model_errors.py`**:
+- **Error analysis functionality** (in `scripts/analyze.py`):
   - Loads OOF predictions from best model
   - Calculates errors in both log and real space
   - Analyzes worst predictions (top 5%)
@@ -1099,7 +1099,7 @@ From ModelComparison.ipynb analysis:
 
 **Usage:**
 ```bash
-python scripts/analyze_model_errors.py catboost
+python scripts/analyze.py errors catboost
 ```
 
 **Output:**
@@ -1206,7 +1206,7 @@ Successfully tested the fixed blending model with existing predictions:
 
 **Files Created:**
 - `utils/cv_strategy.py` - Stratified CV implementation
-- `scripts/analyze_model_errors.py` - Error analysis tool
+- Error analysis functionality (now in `scripts/analyze.py`)
 - `docs/ENSEMBLE_AND_CV_FIXES.md` - Detailed documentation
 
 **Files Modified:**
@@ -1257,10 +1257,10 @@ Successfully tested the fixed blending model with existing predictions:
 ### 5.2 Pipeline Automation
 
 - **Preprocessing**: Automated 8-stage pipeline execution (`notebooks/preprocessing/run_preprocessing.py`)
-- **Model Training**: Sequential execution with `scripts/run_all_models_parallel.py`
+- **Model Training**: Unified training script (`scripts/train.py`)
 - **Hyperparameter Optimization**: Optuna with TPE sampler
-- **Submission Management**: Automatic score retrieval and logging (`utils/kaggle_helper.py`)
-- **Model Comparison**: Automated comparison tools (`scripts/compare_models.py`, `scripts/quick_model_comparison.py`)
+- **Submission Management**: Consolidated Kaggle operations (`kaggle/submit.py`, `kaggle/scores.py`)
+- **Model Analysis**: Unified analysis script (`scripts/analyze.py`)
 
 ### 5.3 Reproducibility
 
@@ -1284,22 +1284,17 @@ Successfully tested the fixed blending model with existing predictions:
 - `notebooks/preprocessing/8targetEncoding.py` - Stage 8
 
 **Model Training**:
-- `scripts/run_all_models_parallel.py` - Main model training orchestrator
+- `scripts/train.py` - Unified model training script (replaces run_all_models_parallel.py)
 - `notebooks/Models/*.py` - Individual model scripts (0-11)
 
-**Kaggle Submission**:
-- `scripts/submit_model.py` - Generalized submission script
-- `scripts/submit_all_models.py` - Submit all models interactively
-- `scripts/get_kaggle_score.py` - Retrieve and log Kaggle scores
-- `scripts/check_submission_status.py` - View submission status
+**Kaggle Operations**:
+- `kaggle/submit.py` - Unified submission script (replaces submit_model.py, submit_all_models.py)
+- `kaggle/scores.py` - Score and leaderboard management (replaces get_kaggle_score.py, check_submission_status.py, etc.)
+- `kaggle/sync.py` - Git sync helper for Kaggle workflow
 
-**Comparison & Analysis**:
-- `scripts/compare_models.py` - Generate visual comparison plots
-- `scripts/quick_model_comparison.py` - Text-based comparison report
-- `scripts/run_model_comparison.py` - Execute comparison analysis
+**Analysis**:
+- `scripts/analyze.py` - Unified analysis script (performance, comparison, errors, best models, hyperparameters)
 - `notebooks/ModelComparison.ipynb` - Interactive Jupyter notebook for model comparison
-- `scripts/analyze_best_model.py` - Identify best-performing models
-- `scripts/analyze_model_errors.py` - Error analysis for feature engineering (new, 2025-12-20)
 
 **Utilities**:
 - `utils/data.py` - Data loading and saving utilities
@@ -1413,7 +1408,7 @@ Models automatically detect and utilize GPU when available, falling back to CPU 
 - Download submission files from Kaggle notebook outputs
 - Or use Kaggle API to download outputs
 - Save to local `data/submissions/` directory
-- Submit using existing submission scripts (`scripts/submit_model.py`)
+- Submit using unified submission script (`python -m kaggle.submit <model_name>`)
 
 #### Synchronization Mechanism
 
@@ -1421,7 +1416,7 @@ Models automatically detect and utilize GPU when available, falling back to CPU 
 - Code synchronization via Git repository
 - All changes tracked in version control
 - Simple `git push` to sync to Kaggle
-- `scripts/sync_to_kaggle.py` helper script checks git status and provides guidance
+- `python -m kaggle.sync` helper script checks git status and provides guidance
 
 **File Structure**:
 ```
@@ -1609,7 +1604,7 @@ verify_gpu_setup()  # Should detect GPU
 **Future Work**:
 - ✅ **COMPLETED (2025-12-20)**: Fixed blending and stacking numerical issues (log space consistency)
 - ✅ **COMPLETED (2025-12-20)**: Implemented stratified CV for better generalization
-- ✅ **COMPLETED (2025-12-20)**: Created error analysis tools (`scripts/analyze_model_errors.py`)
+- ✅ **COMPLETED (2025-12-20)**: Created error analysis tools (now in `scripts/analyze.py`)
 - 🔄 **In Progress**: Run error analysis and implement suggested features
 - 🔄 **In Progress**: Train models on different feature sets (process6, process8) for diversity
 - 🔄 **In Progress**: Try different CatBoost loss functions (MAE, Quantile)
@@ -1664,16 +1659,14 @@ house-prices-starter/
 │   │   └── 11stackingModel.py
 │   ├── ModelComparison.ipynb  # Interactive comparison notebook
 │   └── Journal.ipynb        # Project journal
-├── scripts/                 # Automation & utility scripts
-│   ├── run_all_models_parallel.py  # Main model training script
-│   ├── submit_model.py      # Generalized submission script
-│   ├── submit_all_models.py # Interactive submission
-│   ├── compare_models.py   # Visual comparison
-│   ├── quick_model_comparison.py  # Text comparison
-│   ├── run_model_comparison.py    # Comparison executor
-│   ├── analyze_best_model.py      # Best model analysis
-│   ├── get_kaggle_score.py  # Score retrieval
-│   └── check_submission_status.py # Submission status
+├── scripts/                 # Core scripts
+│   ├── train.py            # Unified model training
+│   ├── analyze.py          # Unified analysis (performance, compare, errors, best, hyperparameters)
+│   └── [utility modules]   # Supporting modules (show_performance.py, compare_models.py, etc.)
+├── kaggle/                  # Kaggle operations (consolidated)
+│   ├── submit.py           # Unified submission script
+│   ├── scores.py           # Score and leaderboard management
+│   └── sync.py             # Git sync helper
 ├── config_local/            # Configuration & hyperparameters
 │   ├── local_config.py      # Paths and directories
 │   └── model_config.py      # Model configurations
@@ -1724,34 +1717,30 @@ python notebooks/preprocessing/run_preprocessing.py
 
 **Train Models**:
 ```bash
-python scripts/run_all_models_parallel.py
+python scripts/train.py                    # Train all models
+python scripts/train.py --models catboost  # Train specific models
 ```
 
 **Submit to Kaggle**:
 ```bash
-python scripts/submit_model.py <model_name>
-# Example: python scripts/submit_model.py catboost
+python -m kaggle.submit catboost           # Submit model
+python -m kaggle.submit --interactive      # Interactive menu
 ```
 
-**Compare Models**:
+**Analyze Results**:
 ```bash
-# Visual comparison
-python scripts/compare_models.py
-
-# Text comparison
-python scripts/quick_model_comparison.py
-
-# Interactive notebook
-jupyter notebook notebooks/ModelComparison.ipynb
+python scripts/analyze.py performance      # Show performance
+python scripts/analyze.py compare          # Compare models
+python scripts/analyze.py best             # Best models analysis
+python scripts/analyze.py errors catboost  # Error analysis
+python scripts/analyze.py hyperparameters  # Hyperparameter analysis
 ```
 
-**Check Status**:
+**Check Kaggle Status**:
 ```bash
-# Submission status
-python scripts/check_submission_status.py
-
-# Best models
-python scripts/analyze_best_model.py
+python -m kaggle.scores status             # Check submission status
+python -m kaggle.scores latest             # Get latest score
+python -m kaggle.scores sync               # Sync scores to CSV
 ```
 
 ### Best Model
@@ -1890,7 +1879,7 @@ python scripts/analyze_best_model.py
 
 **Completed:**
 4. ✅ Created and executed error analysis
-   - Script: `scripts/analyze_model_errors.py`
+   - Command: `python scripts/analyze.py errors <model_name>`
    - Analyzed CatBoost OOF predictions
    - Identified worst 50 predictions (47.63% error)
    - Found high error patterns:
@@ -1924,11 +1913,11 @@ python scripts/analyze_best_model.py
 - `utils/optimization.py` - Added stratified CV support
 - `config_local/model_config.py` - Removed Ridge from ensembles
 - `notebooks/preprocessing/4featureEngineering.py` - Added 4 error-driven features
-- `scripts/analyze_model_errors.py` - Created and fixed bug
+- Error analysis functionality - Integrated into `scripts/analyze.py`
 
 **Files Created Today:**
 - `utils/cv_strategy.py` - Stratified CV implementation
-- `scripts/analyze_model_errors.py` - Error analysis tool
+- Error analysis functionality (now in `scripts/analyze.py`)
 - `docs/ENSEMBLE_AND_CV_FIXES.md` - Detailed documentation
 
 **Next Actions:**
@@ -1944,4 +1933,34 @@ python scripts/analyze_best_model.py
 
 ---
 
-*This logbook serves as the flagship showcase of the project. For detailed technical documentation, implementation details, and error logs, see `TECHNICAL_LOG.md`.*
+---
+
+## 10. Project Streamlining (2025-12-21)
+
+The project has been dramatically streamlined to improve maintainability and usability:
+
+**Consolidation Summary:**
+- **45+ files deleted** - Removed redundant scripts and documentation
+- **Consolidated all Kaggle operations** into `kaggle/` module:
+  - `kaggle/submit.py` - All submission functionality
+  - `kaggle/scores.py` - All score/leaderboard functionality
+  - `kaggle/sync.py` - Git sync helper
+- **Unified scripts**:
+  - `scripts/train.py` - All model training (replaces run_all_models_parallel.py)
+  - `scripts/analyze.py` - All analysis (replaces 8+ separate analysis scripts)
+- **Simplified documentation** - Reduced from 12+ docs to 3 core files:
+  - `docs/STATUS.md` - Project status
+  - `docs/KAGGLE_GUIDE.md` - Kaggle workflow guide
+  - `docs/FLAGSHIP_LOG.md` - This comprehensive technical documentation
+
+**Benefits:**
+- 87% reduction in script files
+- Clear organization - Kaggle operations consolidated, analysis unified
+- Consistent interface - All Kaggle commands use `python -m kaggle.*`
+- Much easier to navigate and maintain
+
+See `FINAL_STRUCTURE.md` for complete structure overview.
+
+---
+
+*This logbook serves as the flagship showcase of the project. For current project status, see `docs/STATUS.md`. For Kaggle workflow, see `docs/KAGGLE_GUIDE.md`.*
